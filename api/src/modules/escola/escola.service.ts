@@ -612,13 +612,49 @@ export class EscolaService {
     });
   }
   async atualizarTemplate(id: string, dto: AtualizarTemplateDto) {
+    const tenantId = TenantContext.tenantId()!;
     const data: Record<string, unknown> = {};
     for (const c of ['nome', 'typeId', 'fundoUrl', 'fundoStorageKey', 'largura', 'altura',
       'orientacao', 'padrao', 'ativo'] as const) {
       if ((dto as any)[c] !== undefined) (data as any)[c] = (dto as any)[c];
     }
     data.atualizadoEm = new Date();
-    return this.prisma.db.certificateTemplate.update({ where: { id }, data: data as any });
+    // Layout aninhado: REPLACE atômico (apaga existentes e recria). Só toca nos
+    // arrays que vierem definidos (undefined = não mexer) — mesmo padrão de
+    // secretariaEvento ({ deleteMany: {}, create: [...] }) e de criarTemplate.
+    if (dto.textos !== undefined) {
+      data.textos = {
+        deleteMany: {},
+        create: dto.textos.map((t) => ({
+          tenantId, conteudo: t.conteudo, posX: t.posX ?? 0, posY: t.posY ?? 0, largura: t.largura,
+          fonte: t.fonte || 'Helvetica', tamanho: t.tamanho ?? 16, cor: t.cor || '#000000',
+          alinhamento: t.alinhamento || 'center', negrito: t.negrito ?? false, ordem: t.ordem ?? 0,
+        })),
+      };
+    }
+    if (dto.elementos !== undefined) {
+      data.elementos = {
+        deleteMany: {},
+        create: dto.elementos.map((e) => ({
+          tenantId, tipo: e.tipo || 'qr', posX: e.posX ?? 0, posY: e.posY ?? 0,
+          largura: e.largura, altura: e.altura, config: e.config ?? {}, ordem: e.ordem ?? 0,
+        })),
+      };
+    }
+    if (dto.fotos !== undefined) {
+      data.fotos = {
+        deleteMany: {},
+        create: dto.fotos.map((f) => ({
+          tenantId, url: f.url, storageKey: f.storageKey, posX: f.posX ?? 0, posY: f.posY ?? 0,
+          largura: f.largura, altura: f.altura, ordem: f.ordem ?? 0,
+        })),
+      };
+    }
+    return this.prisma.db.certificateTemplate.update({
+      where: { id },
+      data: data as any,
+      include: { textos: true, elementos: true, fotos: true },
+    });
   }
   excluirTemplate(id: string) {
     return this.prisma.db.certificateTemplate.delete({ where: { id } }).then(() => ({ excluido: true }));

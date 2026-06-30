@@ -27,6 +27,7 @@ import {
 } from '../../../lib/admin-api';
 import { Aviso, Modal, ui } from '../_components/ui';
 import MediaPicker from '../_components/MediaPicker';
+import CertificadoDesigner from './CertificadoDesigner';
 import type { TemplateAdmin, TipoCertificadoAdmin } from './tipos';
 
 // ─── Editor de blocos de texto (subconjunto do template) ─────────────────────
@@ -584,6 +585,16 @@ export default function Certificados() {
   const [editando, setEditando] = useState<TemplateAdmin | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
+  // Designer visual (drag-drop em canvas). `designer` controla a tela cheia;
+  // `designerTemplate` é o template em edição (null = novo).
+  const [designer, setDesigner] = useState(false);
+  const [designerTemplate, setDesignerTemplate] = useState<TemplateAdmin | null>(null);
+
+  function abrirDesigner(template: TemplateAdmin | null) {
+    setDesignerTemplate(template);
+    setDesigner(true);
+  }
+
   const carregar = useCallback(async () => {
     setCarregando(true);
     setErro('');
@@ -624,16 +635,25 @@ export default function Certificados() {
           Modelos de certificado (fundo, dimensões e blocos de texto) e seus tipos. Os certificados
           são emitidos automaticamente aos alunos aprovados em cursos certificáveis.
         </p>
-        <button
-          type="button"
-          className={ui.btn}
-          onClick={() => {
-            setEditando(null);
-            setModalAberto(true);
-          }}
-        >
-          + Novo modelo
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={ui.btnGhost}
+            onClick={() => abrirDesigner(null)}
+          >
+            Abrir designer visual
+          </button>
+          <button
+            type="button"
+            className={ui.btn}
+            onClick={() => {
+              setEditando(null);
+              setModalAberto(true);
+            }}
+          >
+            + Novo modelo
+          </button>
+        </div>
       </div>
 
       {msgOk && <Aviso tipo="ok">{msgOk}</Aviso>}
@@ -705,6 +725,14 @@ export default function Certificados() {
                           <button
                             type="button"
                             className={ui.btnGhost}
+                            onClick={() => abrirDesigner(t)}
+                            aria-label={`Abrir designer visual do modelo "${t.nome}"`}
+                          >
+                            Designer
+                          </button>
+                          <button
+                            type="button"
+                            className={ui.btnGhost}
                             onClick={() => {
                               setEditando(t);
                               setModalAberto(true);
@@ -763,6 +791,20 @@ export default function Certificados() {
           carregar();
         }}
       />
+
+      {designer && (
+        <CertificadoDesigner
+          editando={designerTemplate}
+          tipos={tipos}
+          onClose={() => setDesigner(false)}
+          onSalvo={() => {
+            setMsgOk(
+              designerTemplate ? 'Modelo atualizado com sucesso.' : 'Modelo criado com sucesso.',
+            );
+            carregar();
+          }}
+        />
+      )}
     </div>
   );
 }

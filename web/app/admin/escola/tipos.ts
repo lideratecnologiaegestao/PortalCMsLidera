@@ -129,6 +129,17 @@ export interface TemplateElementoAdmin {
   ordem: number;
 }
 
+export interface TemplateFotoAdmin {
+  id: string;
+  url?: string | null;
+  storageKey?: string | null;
+  posX?: number | null;
+  posY?: number | null;
+  largura?: number | null;
+  altura?: number | null;
+  ordem: number;
+}
+
 export interface TemplateAdmin {
   id: string;
   typeId?: string | null;
@@ -142,7 +153,7 @@ export interface TemplateAdmin {
   ativo: boolean;
   textos?: TemplateTextoAdmin[];
   elementos?: TemplateElementoAdmin[];
-  fotos?: { id: string; url?: string | null }[];
+  fotos?: TemplateFotoAdmin[];
 }
 
 // ─── Helpers de formatação compartilhados ────────────────────────────────────
