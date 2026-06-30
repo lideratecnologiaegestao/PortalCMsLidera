@@ -86,7 +86,8 @@ export async function migrarUsuarios(ctx) {
       nome: s(u.name) || 'Sem nome',
       email: mapEmail(u.email) || `sem-email-${u.id}@migrado.local`,
       senha_hash: senhaHash,
-      cpf: has('cpf') ? cpf11(u.cpf) : null,
+      // CPF não é migrado: o destino guarda apenas cpf_hash (db/010 removeu o
+      // cpf em claro, LGPD). Backfill posterior via API se necessário.
       role,
       telefone: has('telefone') ? digits(u.telefone) : has('phone') ? digits(u.phone) : null,
       email_verificado: has('email_verified_at') ? !!u.email_verified_at : false,
@@ -103,7 +104,6 @@ export async function migrarUsuarios(ctx) {
     'nome',
     'email',
     'senha_hash',
-    'cpf',
     'role',
     'telefone',
     'email_verificado',

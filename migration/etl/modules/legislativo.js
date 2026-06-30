@@ -90,8 +90,8 @@ const COMITE_STATUS = {
   coletando: 'coletando',
   em_validacao: 'em_validacao',
   validado: 'aprovada',
-  rejeitado: 'rejeitado',
-  arquivado: 'rejeitado',
+  rejeitado: 'rejeitada',
+  arquivado: 'rejeitada',
   convertido: 'convertida',
 };
 

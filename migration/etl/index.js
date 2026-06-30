@@ -36,6 +36,7 @@ import { migrarLegislativo } from './modules/legislativo.js';
 import { migrarTransparencia } from './modules/transparencia.js';
 import { migrarManifestacoes } from './modules/manifestacoes.js';
 import { migrarEscola } from './modules/escola.js';
+import { migrarEventos } from './modules/eventos.js';
 
 // Ordem canônica das fases.
 const FASES = [
@@ -46,6 +47,7 @@ const FASES = [
   { nome: 'transparencia', fn: migrarTransparencia },
   { nome: 'manifestacoes', fn: migrarManifestacoes },
   { nome: 'escola', fn: migrarEscola },
+  { nome: 'eventos', fn: migrarEventos },
 ];
 
 function parseArgs(argv) {

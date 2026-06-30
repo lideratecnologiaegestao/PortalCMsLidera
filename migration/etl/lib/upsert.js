@@ -56,7 +56,13 @@ export async function upsertBatch(tenantId, table, columns, rows, opts = {}) {
       const params = [];
       const tuples = slice.map((row) => {
         const placeholders = allCols.map((col) => {
-          const value = col === 'tenant_id' ? tenantId : normalize(row[col]);
+          let value = col === 'tenant_id' ? tenantId : normalize(row[col]);
+          // Timestamps de criação/atualização são NOT NULL DEFAULT now() no
+          // destino. NULL EXPLÍCITO viola a constraint (o DEFAULT só vale quando
+          // a coluna é OMITIDA do INSERT). Para linhas legadas sem data, usa agora.
+          if (value === null && (col === 'criado_em' || col === 'atualizado_em')) {
+            value = new Date().toISOString();
+          }
           params.push(value);
           return `$${params.length}`;
         });
