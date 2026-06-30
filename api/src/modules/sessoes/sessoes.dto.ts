@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import {
   IsArray,
   IsBoolean,
@@ -14,9 +15,7 @@ export class CriarTipoSessaoDto {
   @IsInt() @IsOptional() ordem?: number;
   @IsBoolean() @IsOptional() ativo?: boolean;
 }
-export class AtualizarTipoSessaoDto extends CriarTipoSessaoDto {
-  @IsString() @IsOptional() nome?: string;
-}
+export class AtualizarTipoSessaoDto extends PartialType(CriarTipoSessaoDto) {}
 
 // ───────────────────────────────────────────────────────────── Sessão
 export class CriarSessaoDto {
@@ -30,10 +29,7 @@ export class CriarSessaoDto {
   @IsString() @IsOptional() ataConteudo?: string;
   @IsString() @IsOptional() eventoId?: string;
 }
-export class AtualizarSessaoDto extends CriarSessaoDto {
-  @IsString() @IsOptional() titulo?: string;
-  @IsString() @IsOptional() dataHora?: string;
-}
+export class AtualizarSessaoDto extends PartialType(CriarSessaoDto) {}
 
 // ───────────────────────────────────────────────────────── Item de pauta
 export class PautaItemDto {
@@ -42,9 +38,7 @@ export class PautaItemDto {
   @IsString() @IsOptional() proposicaoId?: string; // uuid simples, módulo independente
   @IsInt() @IsOptional() ordem?: number;
 }
-export class AtualizarPautaItemDto extends PautaItemDto {
-  @IsString() @IsOptional() titulo?: string;
-}
+export class AtualizarPautaItemDto extends PartialType(PautaItemDto) {}
 
 // ────────────────────────────────────────────────────────────── Presença
 export class PresencaItemDto {

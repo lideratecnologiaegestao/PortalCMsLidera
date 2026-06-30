@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 
 // ─────────────────────────────────────────────────────────── Vereador
 export class CriarVereadorDto {
@@ -28,10 +29,7 @@ export class CriarVereadorDto {
   @IsBoolean() @IsOptional() ativo?: boolean;
 }
 
-export class AtualizarVereadorDto extends CriarVereadorDto {
-  @IsString() @IsOptional() nome?: string;
-  @IsString() @IsOptional() nomeParlamentar?: string;
-}
+export class AtualizarVereadorDto extends PartialType(CriarVereadorDto) {}
 
 // ─────────────────────────────────────────────────── Mesa Diretora
 export class CargoMesaDto {
@@ -53,9 +51,7 @@ export class CriarComissaoDto {
   @IsInt() @IsOptional() ordem?: number;
   @IsBoolean() @IsOptional() ativo?: boolean;
 }
-export class AtualizarComissaoDto extends CriarComissaoDto {
-  @IsString() @IsOptional() nome?: string;
-}
+export class AtualizarComissaoDto extends PartialType(CriarComissaoDto) {}
 
 export class CargoComissaoDto {
   @IsString() @IsNotEmpty() vereadorId!: string;

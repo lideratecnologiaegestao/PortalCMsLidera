@@ -10,6 +10,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 
 // ─────────────────────────────────────────────────────────── Curso
 export class CriarCursoDto {
@@ -30,9 +31,7 @@ export class CriarCursoDto {
   @IsInt() @IsOptional() ordem?: number;
 }
 
-export class AtualizarCursoDto extends CriarCursoDto {
-  @IsString() @IsOptional() titulo?: string;
-}
+export class AtualizarCursoDto extends PartialType(CriarCursoDto) {}
 
 // ─────────────────────────────────────────────────────────── Módulo
 export class CriarModuloDto {
@@ -40,9 +39,7 @@ export class CriarModuloDto {
   @IsString() @IsOptional() descricao?: string;
   @IsInt() @IsOptional() ordem?: number;
 }
-export class AtualizarModuloDto extends CriarModuloDto {
-  @IsString() @IsOptional() titulo?: string;
-}
+export class AtualizarModuloDto extends PartialType(CriarModuloDto) {}
 
 // ─────────────────────────────────────────────────────────── Aula
 export class CriarAulaDto {
@@ -88,9 +85,7 @@ export class CriarProvaDto {
   @IsInt() @IsOptional() ordem?: number;
   @IsArray() @IsOptional() questoes?: QuestaoDto[];
 }
-export class AtualizarProvaDto extends CriarProvaDto {
-  @IsString() @IsOptional() titulo?: string;
-}
+export class AtualizarProvaDto extends PartialType(CriarProvaDto) {}
 
 // ─────────────────────────────────────────────── Tentativa de prova (aluno)
 export class RespostaQuestaoDto {
@@ -174,9 +169,7 @@ export class CriarTemplateDto {
   @IsArray() @IsOptional() elementos?: ElementoTemplateDto[];
   @IsArray() @IsOptional() fotos?: FotoTemplateDto[];
 }
-export class AtualizarTemplateDto extends CriarTemplateDto {
-  @IsString() @IsOptional() nome?: string;
-}
+export class AtualizarTemplateDto extends PartialType(CriarTemplateDto) {}
 export class TipoCertificadoDto {
   @IsString() @IsNotEmpty() nome!: string;
   @IsString() @IsOptional() descricao?: string;

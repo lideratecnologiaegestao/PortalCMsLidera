@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 
 // ──────────────────────────────────────────────────────────── Evento (admin)
 export class CriarEventoDto {
@@ -26,10 +27,7 @@ export class CriarEventoDto {
   @IsBoolean() @IsOptional() ativo?: boolean;
 }
 
-export class AtualizarEventoDto extends CriarEventoDto {
-  @IsString() @IsOptional() titulo?: string;
-  @IsString() @IsOptional() dataHora?: string;
-}
+export class AtualizarEventoDto extends PartialType(CriarEventoDto) {}
 
 // ─────────────────────────────────────────────────────── Inscrição (público)
 export class InscreverDto {

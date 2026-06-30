@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 
 // ───────────────────────────────────────────────────────────── Edital
 export class CriarEditalDto {
@@ -22,10 +23,7 @@ export class CriarEditalDto {
   @IsBoolean() @IsOptional() ativo?: boolean;
 }
 
-export class AtualizarEditalDto extends CriarEditalDto {
-  @IsString() @IsOptional() numero?: string;
-  @IsString() @IsOptional() titulo?: string;
-}
+export class AtualizarEditalDto extends PartialType(CriarEditalDto) {}
 
 // ──────────────────────────────────────────────────────────────── Vaga
 export class VagaDto {

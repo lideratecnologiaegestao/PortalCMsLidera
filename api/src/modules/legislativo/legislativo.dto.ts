@@ -8,6 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PartialType } from '@nestjs/mapped-types';
 
 // ───────────────────────────────────────────────────────── Autores
 export class AutorDto {
@@ -34,10 +35,7 @@ export class CriarProposicaoDto {
   autores?: AutorDto[];
 }
 
-export class AtualizarProposicaoDto extends CriarProposicaoDto {
-  @IsString() @IsOptional() tipo?: string;
-  @IsString() @IsOptional() ementa?: string;
-}
+export class AtualizarProposicaoDto extends PartialType(CriarProposicaoDto) {}
 
 // ──────────────────────────────────────────────────────── Tramitação
 export class TramitarDto {
@@ -87,7 +85,4 @@ export class CriarLeiDto {
   @IsBoolean() @IsOptional() publicada?: boolean;
 }
 
-export class AtualizarLeiDto extends CriarLeiDto {
-  @IsString() @IsOptional() numero?: string;
-  @IsString() @IsOptional() ementa?: string;
-}
+export class AtualizarLeiDto extends PartialType(CriarLeiDto) {}
