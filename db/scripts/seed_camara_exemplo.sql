@@ -50,11 +50,11 @@ BEGIN
     id, slug, nome, uf, municipio_ibge, subdominio, plano, ativo, tipo, funcionalidades
   ) VALUES (
     v_tenant,
-    'camara-exemplo',
+    'camarademo',
     'Câmara Municipal de Exemplo',
     'MT',
     '5100000',
-    'camara-exemplo',
+    'camarademo',
     'padrao',
     true,
     'camara',
@@ -105,7 +105,7 @@ BEGIN
   VALUES (
     v_tenant,
     'Administrador da Câmara (Demo)',
-    'admin@camara-exemplo.demo',
+    'admin@camarademo.demo',
     'admin_prefeitura',
     true
   )

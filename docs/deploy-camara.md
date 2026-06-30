@@ -72,37 +72,34 @@ wsl docker run --rm --network evolution-net minio/mc sh -c \
 
 > Recomendado (segurança): criar uma **access key dedicada** para a câmara com política restrita ao bucket `camara` e trocar `STORAGE_ACCESS_KEY/SECRET` no `.env.prod` (hoje usa a root). 
 
-## 4. Nginx (vhost wildcard)
+## 4. Nginx — roteamento por Host (câmara × prefeitura)
+
+Câmaras e prefeituras compartilham o espaço `*.lidera.app.br`. O Nginx decide o destino pelo **Host**, com base em `server_name` EXATOS (match exato vence o curinga `*.lidera.app.br` da prefeitura):
+
+| Host | Destino |
+|---|---|
+| `camara.lidera.app.br` | **Painel geral** (plataforma); `/` → `/plataforma` |
+| `<slug>.lidera.app.br` (listado no vhost) | Câmara (tenant pelo subdomínio) |
+| `*.lidera.app.br` (resto) | Prefeitura (`prefeitura.conf`, intacto) |
 
 ```powershell
-# Copiar o vhost do repo para o Nginx da casa:
-copy D:\Site\portal-camara\infra\camara\camara.nginx.conf C:\nginx\conf\sites\camara.conf
-
-# Validar e recarregar (sem derrubar conexões):
+# Copiar o vhost + o snippet de locations:
+copy D:\Site\portal-camara\infra\camara\camara.nginx.conf      C:\nginx\conf\sites\camara.conf
+copy D:\Site\portal-camara\infra\camara\camara_locations.inc   C:\nginx\conf\sites\camara_locations.inc
 C:\nginx\nginx.exe -p C:\nginx\ -t
-C:\nginx\nginx.exe -p C:\nginx\ -s reload
+Restart-Service nginx   # `-s reload` falha: Nginx roda como serviço (LocalSystem)
 ```
 
-`server_name *.camara.lidera.app.br` — mais específico que o `*.lidera.app.br` da prefeitura, então o Nginx roteia os subdomínios de câmara para a stack da câmara automaticamente. **Não** precisa mexer no `prefeitura.conf`.
+**➕ Nova câmara** = acrescentar o host no `server_name` do **2º server block** do `camara.conf` (ex.: `cmnovacamara.lidera.app.br`) + `nginx -t` + `Restart-Service nginx` + criar a linha em `tenants` (subdomínio = `cmnovacamara`). Nada mais.
 
-> **Domínio oficial .leg.br:** para apontar `serranovadourada.mt.leg.br` (do sistema antigo), acrescente-o no `server_name` do `camara.conf` E **remova `*.mt.leg.br` do `prefeitura.conf`** (hoje a prefeitura captura todo `*.mt.leg.br`). Depois `nginx -t` + reload.
+> **Domínio oficial .leg.br** (ex.: `serranovadourada.mt.leg.br`): acrescente no `server_name` E **remova `*.mt.leg.br` do `prefeitura.conf`** (hoje a prefeitura captura todo `*.mt.leg.br`).
 
-## 5. Domínios e Cloudflare Zero Trust
+## 5. Cloudflare Zero Trust + DNS
 
-### Painel geral (plataforma) — JÁ funciona, sem mexer no Cloudflare
-`camara.lidera.app.br` é o **painel geral** (modo plataforma / super_admin que gerencia todas as câmaras). É rótulo único sob `lidera.app.br`, então **já é coberto pelo wildcard `*.lidera.app.br`** existente no Cloudflare → chega ao Nginx → vhost da câmara.
-- UI: **`https://camara.lidera.app.br/plataforma`** (Gerenciador da Plataforma)
-- API: `https://camara.lidera.app.br/api/_platform/...` (exige login super_admin)
-- Ativado por `PLATFORM_HOST=camara.lidera.app.br` no `.env.prod`.
+**Nada a fazer por câmara** — como tudo vive em `*.lidera.app.br` (1 rótulo) e o wildcard `*.lidera.app.br` **já existe** no Cloudflare ZT apontando para `HTTP localhost:80`, qualquer `<slug>.lidera.app.br` e o próprio `camara.lidera.app.br` já chegam ao Nginx. O roteamento câmara/prefeitura é 100% do Nginx (seção 4).
 
-### Câmaras individuais — `<slug>.camara.lidera.app.br`
-Cada câmara é um subdomínio de DOIS rótulos (`serra-nova.camara.lidera.app.br`), que **não** é coberto pelo `*.lidera.app.br` (curinga de 1 rótulo). Para isso, adicionar UMA vez no Cloudflare ZT:
-1. **Cloudflare ZT → Networks → Tunnels → (tunnel da Lidera) → Public Hostnames → Add:**
-   - Subdomain `*` · Domain `camara.lidera.app.br` · Service `HTTP` → `localhost:80`
-2. **DNS:** `*.camara.lidera.app.br` resolvendo pelo Cloudflare para o tunnel.
-3. O Nginx (vhost `camara.conf`, `server_name camara.lidera.app.br *.camara.lidera.app.br`) já roteia pelo `Host:` — nada mais a configurar.
-
-> Precedência: ambos (`camara.lidera.app.br` exato e `*.camara.lidera.app.br`) são mais específicos que o `*.lidera.app.br` da prefeitura → o Nginx prioriza a stack da câmara, sem tocar no `prefeitura.conf`.
+- Painel geral: **`https://camara.lidera.app.br`** → redireciona para **`/plataforma`** (Gerenciador da Plataforma; login super_admin). Ativado por `PLATFORM_HOST=camara.lidera.app.br`.
+- `PLATFORM_BASE_DOMAIN=lidera.app.br` faz `<slug>.lidera.app.br` resolver o tenant de subdomínio `<slug>` no banco da câmara.
 
 ## 6. Pós-deploy — criar uma câmara real (tenant)
 
