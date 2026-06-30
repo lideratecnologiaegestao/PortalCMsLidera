@@ -2538,6 +2538,9 @@ model Vereador {
   comissaoCargos  ComissaoCargo[]
   posts           VereadorPost[]
   representacoes  VereadorRepresentacao[]
+  presencas          SessaoPresenca[]   // L2 — presença em sessões
+  proposicaoAutorias ProposicaoAutor[]  // L3 — autoria de proposições
+  proposicaoVotos    ProposicaoVoto[]   // L3 — votação nominal
   @@index([tenantId, ativo, ordem])
   @@index([tenantId, status])
   @@map("vereadores")
@@ -2650,4 +2653,894 @@ model VereadorRepresentacao {
   vereador     Vereador @relation(fields: [vereadorId], references: [id], onDelete: Cascade)
   @@index([tenantId, vereadorId, criadoEm])
   @@map("vereador_representacoes")
+}
+
+// ── L2 Sessões Plenárias (tipos, sessões, pauta, presença, gravações) ──────
+model TipoSessao {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  nome         String
+  descricao    String?
+  ordem        Int       @default(0)
+  ativo        Boolean   @default(true)
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime  @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  sessoes      Sessao[]
+  @@index([tenantId, ativo, ordem])
+  @@map("tipos_sessao")
+}
+
+model Sessao {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String             @map("tenant_id") @db.Uuid
+  tipoSessaoId    String?            @map("tipo_sessao_id") @db.Uuid
+  titulo          String
+  dataHora        DateTime           @map("data_hora") @db.Timestamptz(6)
+  local           String?
+  status          String             @default("agendada")
+  quorum          Int?
+  videoAoVivoUrl  String?            @map("video_ao_vivo_url")
+  ataConteudo     String?            @map("ata_conteudo")
+  ataPublicadaEm  DateTime?          @map("ata_publicada_em") @db.Timestamptz(6)
+  eventoId        String?            @map("evento_id") @db.Uuid
+  criadoEm        DateTime           @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm    DateTime           @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  tipoSessao      TipoSessao?        @relation(fields: [tipoSessaoId], references: [id], onDelete: SetNull)
+  pautaItens      SessaoPautaItem[]
+  presencas       SessaoPresenca[]
+  gravacoes       SessaoGravacao[]
+  @@index([tenantId, dataHora])
+  @@index([tenantId, status, dataHora])
+  @@index([tenantId, tipoSessaoId])
+  @@map("sessoes")
+}
+
+model SessaoPautaItem {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  sessaoId     String   @map("sessao_id") @db.Uuid
+  proposicaoId String?  @map("proposicao_id") @db.Uuid
+  ordem        Int      @default(0)
+  titulo       String
+  descricao    String?
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  sessao       Sessao   @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  @@index([tenantId, sessaoId, ordem])
+  @@map("sessao_pauta_itens")
+}
+
+model SessaoPresenca {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  sessaoId    String   @map("sessao_id") @db.Uuid
+  vereadorId  String   @map("vereador_id") @db.Uuid
+  situacao    String   @default("presente")
+  observacao  String?
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  sessao      Sessao   @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  vereador    Vereador @relation(fields: [vereadorId], references: [id], onDelete: Cascade)
+  @@unique([sessaoId, vereadorId])
+  @@index([tenantId, sessaoId])
+  @@index([tenantId, vereadorId, situacao])
+  @@map("sessao_presencas")
+}
+
+model SessaoGravacao {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  sessaoId    String   @map("sessao_id") @db.Uuid
+  titulo      String
+  videoUrl    String?  @map("video_url")
+  storageKey  String?  @map("storage_key")
+  duracao     Int?
+  ordem       Int      @default(0)
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  sessao      Sessao   @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  @@index([tenantId, sessaoId, ordem])
+  @@map("sessao_gravacoes")
+}
+
+// NOTA: adicionar ao model Vereador existente a relation inversa:
+//   presencas       SessaoPresenca[]
+// ── L3 Legislativo (proposições, tramitação, votação, emendas, leis, iniciativa popular) ──
+// Referências a outros módulos novos (autorPrincipalId→vereador, sessaoId→sessao L2,
+// comissaoId/relatorId, proposicaoId em leis e comitês) são escalares uuid SIMPLES,
+// SEM relation/FK, para manter independência. proposicao_autores e proposicao_votos
+// referenciam Vereador (L1) por FK.
+
+model Proposicao {
+  id               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String                  @map("tenant_id") @db.Uuid
+  tipo             String                  @default("pl_ordinaria")
+  numero           Int?
+  ano              Int?
+  protocolo        String?
+  ementa           String
+  texto            String?
+  pdfUrl           String?                 @map("pdf_url")
+  storageKey       String?                 @map("storage_key")
+  statusAtual      String                  @default("protocolada") @map("status_atual")
+  autorPrincipalId String?                 @map("autor_principal_id") @db.Uuid
+  dataProtocolo    DateTime?               @map("data_protocolo") @db.Date
+  publicada        Boolean                 @default(true)
+  criadoEm         DateTime                @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm     DateTime                @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  autores          ProposicaoAutor[]
+  tramitacoes      ProposicaoTramitacao[]
+  votacoes         ProposicaoVotacao[]
+  emendas          ProposicaoEmenda[]
+  @@index([tenantId, ano, numero])
+  @@index([tenantId, tipo])
+  @@index([tenantId, statusAtual])
+  @@index([tenantId, autorPrincipalId])
+  @@map("proposicoes")
+}
+
+model ProposicaoAutor {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  proposicaoId String     @map("proposicao_id") @db.Uuid
+  vereadorId   String     @map("vereador_id") @db.Uuid
+  papel        String     @default("autor")
+  ordem        Int        @default(0)
+  criadoEm     DateTime   @default(now()) @map("criado_em") @db.Timestamptz(6)
+  proposicao   Proposicao @relation(fields: [proposicaoId], references: [id], onDelete: Cascade)
+  vereador     Vereador   @relation(fields: [vereadorId], references: [id], onDelete: Cascade)
+  @@index([tenantId, proposicaoId, ordem])
+  @@index([tenantId, vereadorId])
+  @@map("proposicao_autores")
+}
+
+model ProposicaoTramitacao {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  proposicaoId String     @map("proposicao_id") @db.Uuid
+  fase         String
+  despacho     String?
+  comissaoId   String?    @map("comissao_id") @db.Uuid
+  relatorId    String?    @map("relator_id") @db.Uuid
+  data         DateTime   @default(now()) @db.Timestamptz(6)
+  atorId       String?    @map("ator_id") @db.Uuid
+  criadoEm     DateTime   @default(now()) @map("criado_em") @db.Timestamptz(6)
+  proposicao   Proposicao @relation(fields: [proposicaoId], references: [id], onDelete: Cascade)
+  @@index([tenantId, proposicaoId, data])
+  @@map("proposicao_tramitacoes")
+}
+
+model ProposicaoVotacao {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String            @map("tenant_id") @db.Uuid
+  proposicaoId String            @map("proposicao_id") @db.Uuid
+  sessaoId     String?           @map("sessao_id") @db.Uuid
+  turno        String?
+  resultado    String            @default("pendente")
+  quorum       String?
+  favoraveis   Int               @default(0)
+  contrarios   Int               @default(0)
+  abstencoes   Int               @default(0)
+  ausentes     Int               @default(0)
+  data         DateTime          @default(now()) @db.Timestamptz(6)
+  criadoEm     DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
+  proposicao   Proposicao        @relation(fields: [proposicaoId], references: [id], onDelete: Cascade)
+  votos        ProposicaoVoto[]
+  @@index([tenantId, proposicaoId, data])
+  @@index([tenantId, sessaoId])
+  @@map("proposicao_votacoes")
+}
+
+model ProposicaoVoto {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String            @map("tenant_id") @db.Uuid
+  votacaoId  String            @map("votacao_id") @db.Uuid
+  vereadorId String            @map("vereador_id") @db.Uuid
+  voto       String            @default("ausente")
+  criadoEm   DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
+  votacao    ProposicaoVotacao @relation(fields: [votacaoId], references: [id], onDelete: Cascade)
+  vereador   Vereador          @relation(fields: [vereadorId], references: [id], onDelete: Cascade)
+  @@index([tenantId, votacaoId])
+  @@map("proposicao_votos")
+}
+
+model ProposicaoEmenda {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  proposicaoId String     @map("proposicao_id") @db.Uuid
+  numero       Int?
+  tipo         String     @default("modificativa")
+  texto        String?
+  autorId      String?    @map("autor_id") @db.Uuid
+  status       String     @default("apresentada")
+  criadoEm     DateTime   @default(now()) @map("criado_em") @db.Timestamptz(6)
+  proposicao   Proposicao @relation(fields: [proposicaoId], references: [id], onDelete: Cascade)
+  @@index([tenantId, proposicaoId, numero])
+  @@map("proposicao_emendas")
+}
+
+model Lei {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  numero       String
+  tipo         String    @default("lei_ordinaria")
+  ano          Int?
+  ementa       String
+  texto        String?
+  dataSancao   DateTime? @map("data_sancao") @db.Date
+  proposicaoId String?   @map("proposicao_id") @db.Uuid
+  pdfUrl       String?   @map("pdf_url")
+  storageKey   String?   @map("storage_key")
+  vigente      Boolean   @default(true)
+  publicada    Boolean   @default(true)
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime  @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  @@index([tenantId, ano, numero])
+  @@index([tenantId, tipo, vigente])
+  @@index([tenantId, proposicaoId])
+  @@map("leis")
+}
+
+model IniciativaPopularComite {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  titulo        String
+  descricao     String?
+  responsavel   String?
+  contato       String?
+  metaApoios    Int      @default(0) @map("meta_apoios")
+  apoiosValidos Int      @default(0) @map("apoios_validos")
+  status        String   @default("coletando")
+  proposicaoId  String?  @map("proposicao_id") @db.Uuid
+  criadoEm      DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm  DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  @@index([tenantId, status, criadoEm])
+  @@map("iniciativa_popular_comites")
+}
+
+// ── ATENÇÃO: adicionar estas relations DENTRO do model Vereador existente ──
+// (no bloco de relations, junto a mesaCargos/comissaoCargos/posts/representacoes):
+//   proposicaoAutorias  ProposicaoAutor[]
+//   proposicaoVotos     ProposicaoVoto[]
+// ── L4 Escola Legislativa (Cursos, Provas, Certificados) ───────────────────
+model Curso {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  titulo         String
+  slug           String?
+  resumo         String?
+  descricao      String?
+  capaUrl        String?       @map("capa_url")
+  capaStorageKey String?       @map("capa_storage_key")
+  cargaHoraria   Int?          @map("carga_horaria")
+  inicioEm       DateTime?     @map("inicio_em") @db.Date
+  fimEm          DateTime?     @map("fim_em") @db.Date
+  certificacao   Boolean       @default(true)
+  notaMinima     Decimal       @default(70) @map("nota_minima") @db.Decimal(5, 2)
+  templateId     String?       @map("template_id") @db.Uuid
+  status         String        @default("rascunho")
+  publicado      Boolean       @default(false)
+  ordem          Int           @default(0)
+  criadoEm       DateTime      @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm   DateTime      @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  modulos        CursoModulo[]
+  aulas          CursoAula[]
+  provas         CursoProva[]
+  inscricoes     CursoInscricao[]
+  certificados   CursoCertificado[]
+  @@index([tenantId, publicado, ordem])
+  @@index([tenantId, status])
+  @@map("cursos")
+}
+
+model CursoModulo {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String      @map("tenant_id") @db.Uuid
+  cursoId      String      @map("curso_id") @db.Uuid
+  titulo       String
+  descricao    String?
+  ordem        Int         @default(0)
+  criadoEm     DateTime    @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime    @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  curso        Curso       @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  aulas        CursoAula[]
+  provas       CursoProva[]
+  @@index([tenantId, cursoId, ordem])
+  @@map("curso_modulos")
+}
+
+model CursoAula {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String      @map("tenant_id") @db.Uuid
+  moduloId     String      @map("modulo_id") @db.Uuid
+  cursoId      String      @map("curso_id") @db.Uuid
+  titulo       String
+  conteudo     Json        @default("{}")
+  videoUrl     String?     @map("video_url")
+  storageKey   String?     @map("storage_key")
+  duracaoMin   Int?        @map("duracao_min")
+  ordem        Int         @default(0)
+  criadoEm     DateTime    @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime    @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  modulo       CursoModulo @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  curso        Curso       @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  conclusoes   CursoAulaConclusao[]
+  duvidas      CursoAulaDuvida[]
+  @@index([tenantId, moduloId, ordem])
+  @@index([tenantId, cursoId])
+  @@map("curso_aulas")
+}
+
+model CursoAulaConclusao {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  aulaId      String    @map("aula_id") @db.Uuid
+  cursoId     String    @map("curso_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  concluidoEm DateTime  @default(now()) @map("concluido_em") @db.Timestamptz(6)
+  aula        CursoAula @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, aulaId, userId])
+  @@index([tenantId, userId, cursoId])
+  @@map("curso_aula_conclusoes")
+}
+
+model CursoProva {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  cursoId        String        @map("curso_id") @db.Uuid
+  moduloId       String?       @map("modulo_id") @db.Uuid
+  titulo         String
+  descricao      String?
+  notaMinima     Decimal       @default(70) @map("nota_minima") @db.Decimal(5, 2)
+  tempoLimiteMin Int?          @map("tempo_limite_min")
+  maxTentativas  Int           @default(1) @map("max_tentativas")
+  embaralhar     Boolean       @default(false)
+  ativa          Boolean       @default(true)
+  ordem          Int           @default(0)
+  criadoEm       DateTime      @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm   DateTime      @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  curso          Curso         @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  modulo         CursoModulo?  @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  questoes       CursoQuestao[]
+  tentativas     CursoTentativaProva[]
+  @@index([tenantId, cursoId, ordem])
+  @@index([tenantId, moduloId])
+  @@map("curso_provas")
+}
+
+model CursoQuestao {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String       @map("tenant_id") @db.Uuid
+  provaId   String       @map("prova_id") @db.Uuid
+  enunciado String
+  tipo      String       @default("objetiva")
+  peso      Decimal      @default(1) @db.Decimal(5, 2)
+  ordem     Int          @default(0)
+  criadoEm  DateTime     @default(now()) @map("criado_em") @db.Timestamptz(6)
+  prova     CursoProva   @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  opcoes    CursoOpcao[]
+  @@index([tenantId, provaId, ordem])
+  @@map("curso_questoes")
+}
+
+model CursoOpcao {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String       @map("tenant_id") @db.Uuid
+  questaoId String       @map("questao_id") @db.Uuid
+  texto     String
+  correta   Boolean      @default(false)
+  ordem     Int          @default(0)
+  criadoEm  DateTime     @default(now()) @map("criado_em") @db.Timestamptz(6)
+  questao   CursoQuestao @relation(fields: [questaoId], references: [id], onDelete: Cascade)
+  @@index([tenantId, questaoId, ordem])
+  @@map("curso_opcoes")
+}
+
+model CursoTentativaProva {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String     @map("tenant_id") @db.Uuid
+  provaId       String     @map("prova_id") @db.Uuid
+  cursoId       String     @map("curso_id") @db.Uuid
+  userId        String     @map("user_id") @db.Uuid
+  numero        Int        @default(1)
+  status        String     @default("em_andamento")
+  nota          Decimal?   @db.Decimal(5, 2)
+  notaObjetiva  Decimal?   @map("nota_objetiva") @db.Decimal(5, 2)
+  iniciadaEm    DateTime   @default(now()) @map("iniciada_em") @db.Timestamptz(6)
+  heartbeatEm   DateTime?  @map("heartbeat_em") @db.Timestamptz(6)
+  finalizadaEm  DateTime?  @map("finalizada_em") @db.Timestamptz(6)
+  corrigidaEm   DateTime?  @map("corrigida_em") @db.Timestamptz(6)
+  corrigidaPor  String?    @map("corrigida_por") @db.Uuid
+  criadoEm      DateTime   @default(now()) @map("criado_em") @db.Timestamptz(6)
+  prova         CursoProva @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  questoes      CursoTentativaQuestao[]
+  @@index([tenantId, userId, provaId])
+  @@index([tenantId, status, finalizadaEm])
+  @@map("curso_tentativas_prova")
+}
+
+model CursoTentativaQuestao {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String              @map("tenant_id") @db.Uuid
+  tentativaId   String              @map("tentativa_id") @db.Uuid
+  questaoId     String              @map("questao_id") @db.Uuid
+  opcaoId       String?             @map("opcao_id") @db.Uuid
+  respostaTexto String?             @map("resposta_texto")
+  correta       Boolean?
+  nota          Decimal?            @db.Decimal(5, 2)
+  feedback      String?
+  criadoEm      DateTime            @default(now()) @map("criado_em") @db.Timestamptz(6)
+  tentativa     CursoTentativaProva @relation(fields: [tentativaId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, tentativaId, questaoId])
+  @@index([tenantId, tentativaId])
+  @@map("curso_tentativa_questoes")
+}
+
+model CursoInscricao {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  cursoId      String             @map("curso_id") @db.Uuid
+  userId       String             @map("user_id") @db.Uuid
+  status       String             @default("ativa")
+  progresso    Int                @default(0)
+  aprovado     Boolean            @default(false)
+  inscritoEm   DateTime           @default(now()) @map("inscrito_em") @db.Timestamptz(6)
+  concluidoEm  DateTime?          @map("concluido_em") @db.Timestamptz(6)
+  curso        Curso              @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  certificados CursoCertificado[]
+  @@unique([tenantId, cursoId, userId])
+  @@index([tenantId, userId, status])
+  @@map("curso_inscricoes")
+}
+
+model CursoCertificado {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String          @map("tenant_id") @db.Uuid
+  cursoId       String          @map("curso_id") @db.Uuid
+  userId        String          @map("user_id") @db.Uuid
+  inscricaoId   String?         @map("inscricao_id") @db.Uuid
+  templateId    String?         @map("template_id") @db.Uuid
+  codigo        String          @unique
+  nomeAluno     String          @map("nome_aluno")
+  tituloCurso   String          @map("titulo_curso")
+  cargaHoraria  Int?            @map("carga_horaria")
+  pdfUrl        String?         @map("pdf_url")
+  pdfStorageKey String?         @map("pdf_storage_key")
+  qrUrl         String?         @map("qr_url")
+  emitidoEm     DateTime        @default(now()) @map("emitido_em") @db.Timestamptz(6)
+  criadoEm      DateTime        @default(now()) @map("criado_em") @db.Timestamptz(6)
+  curso         Curso           @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  inscricao     CursoInscricao? @relation(fields: [inscricaoId], references: [id], onDelete: SetNull)
+  @@index([tenantId, userId, emitidoEm])
+  @@index([tenantId, cursoId])
+  @@map("curso_certificados")
+}
+
+model CertificateType {
+  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String                @map("tenant_id") @db.Uuid
+  nome      String
+  descricao String?
+  ativo     Boolean               @default(true)
+  ordem     Int                   @default(0)
+  criadoEm  DateTime              @default(now()) @map("criado_em") @db.Timestamptz(6)
+  templates CertificateTemplate[]
+  @@index([tenantId, ativo, ordem])
+  @@map("certificate_types")
+}
+
+model CertificateTemplate {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String                @map("tenant_id") @db.Uuid
+  typeId          String?               @map("type_id") @db.Uuid
+  nome            String
+  fundoUrl        String?               @map("fundo_url")
+  fundoStorageKey String?               @map("fundo_storage_key")
+  largura         Int                   @default(842)
+  altura          Int                   @default(595)
+  orientacao      String                @default("paisagem")
+  padrao          Boolean               @default(false)
+  ativo           Boolean               @default(true)
+  criadoEm        DateTime              @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm    DateTime              @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  type            CertificateType?      @relation(fields: [typeId], references: [id], onDelete: SetNull)
+  textos          CertificateText[]
+  elementos       CertificateElement[]
+  fotos           CertificatePhoto[]
+  @@index([tenantId, ativo])
+  @@map("certificate_templates")
+}
+
+model CertificateElement {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String              @map("tenant_id") @db.Uuid
+  templateId String              @map("template_id") @db.Uuid
+  tipo       String              @default("qr")
+  posX       Decimal             @default(0) @map("pos_x") @db.Decimal(8, 2)
+  posY       Decimal             @default(0) @map("pos_y") @db.Decimal(8, 2)
+  largura    Decimal?            @db.Decimal(8, 2)
+  altura     Decimal?            @db.Decimal(8, 2)
+  config     Json                @default("{}")
+  ordem      Int                 @default(0)
+  criadoEm   DateTime            @default(now()) @map("criado_em") @db.Timestamptz(6)
+  template   CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  @@index([tenantId, templateId, ordem])
+  @@map("certificate_elements")
+}
+
+model CertificateText {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  templateId  String              @map("template_id") @db.Uuid
+  conteudo    String
+  posX        Decimal             @default(0) @map("pos_x") @db.Decimal(8, 2)
+  posY        Decimal             @default(0) @map("pos_y") @db.Decimal(8, 2)
+  largura     Decimal?            @db.Decimal(8, 2)
+  fonte       String              @default("Helvetica")
+  tamanho     Int                 @default(16)
+  cor         String              @default("#000000")
+  alinhamento String              @default("center")
+  negrito     Boolean             @default(false)
+  ordem       Int                 @default(0)
+  criadoEm    DateTime            @default(now()) @map("criado_em") @db.Timestamptz(6)
+  template    CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  @@index([tenantId, templateId, ordem])
+  @@map("certificate_texts")
+}
+
+model CertificatePhoto {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String              @map("tenant_id") @db.Uuid
+  templateId String              @map("template_id") @db.Uuid
+  url        String?
+  storageKey String?             @map("storage_key")
+  posX       Decimal             @default(0) @map("pos_x") @db.Decimal(8, 2)
+  posY       Decimal             @default(0) @map("pos_y") @db.Decimal(8, 2)
+  largura    Decimal?            @db.Decimal(8, 2)
+  altura     Decimal?            @db.Decimal(8, 2)
+  ordem      Int                 @default(0)
+  criadoEm   DateTime            @default(now()) @map("criado_em") @db.Timestamptz(6)
+  template   CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  @@index([tenantId, templateId, ordem])
+  @@map("certificate_photos")
+}
+
+model CursoAulaDuvida {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String              @map("tenant_id") @db.Uuid
+  aulaId    String              @map("aula_id") @db.Uuid
+  cursoId   String              @map("curso_id") @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  titulo    String?
+  mensagem  String
+  resolvida Boolean             @default(false)
+  criadoEm  DateTime            @default(now()) @map("criado_em") @db.Timestamptz(6)
+  aula      CursoAula           @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  respostas CursoAulaResposta[]
+  @@index([tenantId, aulaId, criadoEm])
+  @@index([tenantId, userId])
+  @@map("curso_aula_duvidas")
+}
+
+model CursoAulaResposta {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  duvidaId    String          @map("duvida_id") @db.Uuid
+  userId      String          @map("user_id") @db.Uuid
+  mensagem    String
+  doProfessor Boolean         @default(false) @map("do_professor")
+  criadoEm    DateTime        @default(now()) @map("criado_em") @db.Timestamptz(6)
+  duvida      CursoAulaDuvida @relation(fields: [duvidaId], references: [id], onDelete: Cascade)
+  @@index([tenantId, duvidaId, criadoEm])
+  @@map("curso_aula_respostas")
+}
+
+model CursoFeedback {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  cursoId    String   @map("curso_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  nota       Int      @default(5)
+  comentario String?
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  @@unique([tenantId, cursoId, userId])
+  @@index([tenantId, cursoId, criadoEm])
+  @@map("curso_feedbacks")
+}
+
+model CursoRestricao {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String   @map("tenant_id") @db.Uuid
+  cursoId  String   @map("curso_id") @db.Uuid
+  tipo     String   @default("vagas")
+  valor    String?
+  config   Json     @default("{}")
+  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  @@index([tenantId, cursoId])
+  @@map("curso_restricoes")
+}
+// === L5 PSS (Processo Seletivo Simplificado) — anexar ao final de schema.prisma ===
+// Validado com `prisma validate` (v5.18) integrado ao schema existente.
+
+model PssEdital {
+  id                 String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String                        @map("tenant_id") @db.Uuid
+  numero             String
+  titulo             String
+  slug               String?
+  objeto             String?
+  status             String                        @default("rascunho")
+  inscricaoInicio    DateTime?                     @map("inscricao_inicio") @db.Timestamptz(6)
+  inscricaoFim       DateTime?                     @map("inscricao_fim") @db.Timestamptz(6)
+  rankingPublicado   Boolean                       @default(false) @map("ranking_publicado")
+  rankingPublicadoEm DateTime?                     @map("ranking_publicado_em") @db.Timestamptz(6)
+  ativo              Boolean                       @default(true)
+  ordem              Int                           @default(0)
+  criadoEm           DateTime                      @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm       DateTime                      @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  vagas              PssVaga[]
+  fases              PssFase[]
+  inscricoes         PssInscricao[]
+  anexos             PssAnexo[]
+  aberturas          PssAplicAberturaRetificacao[]
+  comissaoMembros    PssAplicComissaoMembro[]
+  situacoes          PssAplicSituacao[]
+  tabelaSalarial     PssAplicTabelaSalarial[]
+  @@index([tenantId, ativo, ordem])
+  @@index([tenantId, status])
+  @@map("pss_editais")
+}
+
+model PssVaga {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String     @map("tenant_id") @db.Uuid
+  editalId      String     @map("edital_id") @db.Uuid
+  cargo         String
+  escolaridade  String?
+  quantidade    Int        @default(1)
+  vagasCadastro Int        @default(0) @map("vagas_cadastro")
+  requisitos    String?
+  cargaHoraria  String?    @map("carga_horaria")
+  salario       Decimal?   @db.Decimal(14, 2)
+  ordem         Int        @default(0)
+  criadoEm      DateTime   @default(now()) @map("criado_em") @db.Timestamptz(6)
+  edital        PssEdital  @relation(fields: [editalId], references: [id], onDelete: Cascade)
+  @@index([tenantId, editalId, ordem])
+  @@map("pss_vagas")
+}
+
+model PssFase {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String         @map("tenant_id") @db.Uuid
+  editalId     String         @map("edital_id") @db.Uuid
+  nome         String
+  tipo         String         @default("titulos")
+  peso         Decimal        @default(1) @db.Decimal(8, 4)
+  eliminatoria Boolean        @default(false)
+  notaCorte    Decimal?       @map("nota_corte") @db.Decimal(8, 2)
+  ordem        Int            @default(0)
+  criadoEm     DateTime       @default(now()) @map("criado_em") @db.Timestamptz(6)
+  edital       PssEdital      @relation(fields: [editalId], references: [id], onDelete: Cascade)
+  criterios    PssCriterio[]
+  notas        PssNota[]
+  @@index([tenantId, editalId, ordem])
+  @@map("pss_fases")
+}
+
+model PssCriterio {
+  id            String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String                  @map("tenant_id") @db.Uuid
+  faseId        String                  @map("fase_id") @db.Uuid
+  descricao     String
+  pontos        Decimal                 @default(0) @db.Decimal(8, 2)
+  pontosMaximo  Decimal?                @map("pontos_maximo") @db.Decimal(8, 2)
+  ordem         Int                     @default(0)
+  criadoEm      DateTime                @default(now()) @map("criado_em") @db.Timestamptz(6)
+  fase          PssFase                 @relation(fields: [faseId], references: [id], onDelete: Cascade)
+  inscricoes    PssInscricaoCriterio[]
+  @@index([tenantId, faseId, ordem])
+  @@map("pss_criterios")
+}
+
+model PssInscricao {
+  id            String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String                  @map("tenant_id") @db.Uuid
+  editalId      String                  @map("edital_id") @db.Uuid
+  vagaId        String?                 @map("vaga_id") @db.Uuid
+  userId        String?                 @map("user_id") @db.Uuid
+  protocolo     String
+  nome          String
+  cpf           String?
+  email         String?
+  telefone      String?
+  dados         Json                    @default("{}")
+  status        String                  @default("recebida")
+  motivo        String?
+  notaFinal     Decimal?                @map("nota_final") @db.Decimal(10, 4)
+  classificacao Int?
+  criadoEm      DateTime                @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm  DateTime                @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  edital        PssEdital               @relation(fields: [editalId], references: [id], onDelete: Cascade)
+  criterios     PssInscricaoCriterio[]
+  notas         PssNota[]
+  anexos        PssAnexo[]
+  @@index([tenantId, editalId, status])
+  @@index([tenantId, userId])
+  @@index([tenantId, editalId, classificacao])
+  @@map("pss_inscricoes")
+}
+
+model PssInscricaoCriterio {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String       @map("tenant_id") @db.Uuid
+  inscricaoId  String       @map("inscricao_id") @db.Uuid
+  criterioId   String       @map("criterio_id") @db.Uuid
+  quantidade   Int          @default(1)
+  observacao   String?
+  validado     Boolean      @default(false)
+  criadoEm     DateTime     @default(now()) @map("criado_em") @db.Timestamptz(6)
+  inscricao    PssInscricao @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+  criterio     PssCriterio  @relation(fields: [criterioId], references: [id], onDelete: Cascade)
+  @@index([tenantId, inscricaoId])
+  @@index([tenantId, criterioId])
+  @@map("pss_inscricao_criterios")
+}
+
+model PssNota {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String       @map("tenant_id") @db.Uuid
+  inscricaoId  String       @map("inscricao_id") @db.Uuid
+  faseId       String       @map("fase_id") @db.Uuid
+  nota         Decimal      @default(0) @db.Decimal(8, 2)
+  observacao   String?
+  lancadoPor   String?      @map("lancado_por") @db.Uuid
+  criadoEm     DateTime     @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime     @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  inscricao    PssInscricao @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+  fase         PssFase      @relation(fields: [faseId], references: [id], onDelete: Cascade)
+  @@index([tenantId, inscricaoId, faseId])
+  @@map("pss_notas")
+}
+
+model PssAnexo {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  editalId     String?       @map("edital_id") @db.Uuid
+  inscricaoId  String?       @map("inscricao_id") @db.Uuid
+  titulo       String
+  tipo         String        @default("documento")
+  url          String?
+  storageKey   String?       @map("storage_key")
+  ordem        Int           @default(0)
+  criadoEm     DateTime      @default(now()) @map("criado_em") @db.Timestamptz(6)
+  edital       PssEdital?    @relation(fields: [editalId], references: [id], onDelete: Cascade)
+  inscricao    PssInscricao? @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+  @@index([tenantId, editalId, ordem])
+  @@index([tenantId, inscricaoId, ordem])
+  @@map("pss_anexos")
+}
+
+model PssAplicAberturaRetificacao {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  editalId    String    @map("edital_id") @db.Uuid
+  tipo        String    @default("abertura")
+  versao      Int       @default(1)
+  dataAto     DateTime? @map("data_ato") @db.Date
+  descricao   String?
+  url         String?
+  storageKey  String?   @map("storage_key")
+  criadoEm    DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  edital      PssEdital @relation(fields: [editalId], references: [id], onDelete: Cascade)
+  @@index([tenantId, editalId, versao])
+  @@map("pss_aplic_abertura_retificacao")
+}
+
+model PssAplicComissaoMembro {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  editalId  String    @map("edital_id") @db.Uuid
+  userId    String?   @map("user_id") @db.Uuid
+  nome      String
+  cpf       String?
+  cargo     String    @default("membro")
+  ordem     Int       @default(0)
+  criadoEm  DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  edital    PssEdital @relation(fields: [editalId], references: [id], onDelete: Cascade)
+  @@index([tenantId, editalId, ordem])
+  @@map("pss_aplic_comissao_membro")
+}
+
+model PssAplicSituacao {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  editalId     String    @map("edital_id") @db.Uuid
+  codigo       String
+  descricao    String?
+  dataSituacao DateTime? @map("data_situacao") @db.Date
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  edital       PssEdital @relation(fields: [editalId], references: [id], onDelete: Cascade)
+  @@index([tenantId, editalId, dataSituacao])
+  @@map("pss_aplic_situacao")
+}
+
+model PssAplicTabelaSalarial {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  editalId     String    @map("edital_id") @db.Uuid
+  vagaId       String?   @map("vaga_id") @db.Uuid
+  codigo       String?
+  cargo        String
+  nivel        String?
+  classe       String?
+  salarioBase  Decimal   @default(0) @map("salario_base") @db.Decimal(14, 2)
+  cargaHoraria String?   @map("carga_horaria")
+  ordem        Int       @default(0)
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  edital       PssEdital @relation(fields: [editalId], references: [id], onDelete: Cascade)
+  @@index([tenantId, editalId, ordem])
+  @@map("pss_aplic_tabela_salarial")
+}
+// ── L6 Eventos & Audiências Públicas (migration 108_eventos.sql) ──────────────
+model Evento {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String             @map("tenant_id") @db.Uuid
+  tipo              String             @default("audiencia_publica")
+  titulo            String
+  slug              String?
+  descricao         String?
+  dataHora          DateTime           @map("data_hora") @db.Timestamptz(6)
+  dataFim           DateTime?          @map("data_fim") @db.Timestamptz(6)
+  local             String?
+  onlineUrl         String?            @map("online_url")
+  vagas             Int?
+  capaUrl           String?            @map("capa_url")
+  certificavel      Boolean            @default(false)
+  inscricoesAbertas Boolean            @default(true) @map("inscricoes_abertas")
+  sessaoId          String?            @map("sessao_id") @db.Uuid
+  publicado         Boolean            @default(true)
+  ativo             Boolean            @default(true)
+  criadoEm          DateTime           @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm      DateTime           @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  inscricoes        EventoInscricao[]
+  certificados      EventoCertificado[]
+  @@index([tenantId, ativo, dataHora])
+  @@index([tenantId, tipo, dataHora])
+  @@index([tenantId, sessaoId])
+  @@map("eventos")
+}
+
+model EventoInscricao {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  eventoId     String             @map("evento_id") @db.Uuid
+  cidadaoId    String?            @map("cidadao_id") @db.Uuid
+  nome         String
+  email        String
+  telefone     String?
+  documento    String?
+  status       String             @default("confirmada")
+  presente     Boolean            @default(false)
+  presenteEm   DateTime?          @map("presente_em") @db.Timestamptz(6)
+  criadoEm     DateTime           @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime           @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  evento       Evento             @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  certificado  EventoCertificado?
+  @@index([tenantId, eventoId, status])
+  @@index([tenantId, cidadaoId, criadoEm])
+  @@map("evento_inscricoes")
+}
+
+model EventoCertificado {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String          @map("tenant_id") @db.Uuid
+  eventoId     String          @map("evento_id") @db.Uuid
+  inscricaoId  String          @unique @map("inscricao_id") @db.Uuid
+  codigo       String
+  nome         String
+  pdfUrl       String?         @map("pdf_url")
+  storageKey   String?         @map("storage_key")
+  emitidoEm    DateTime        @default(now()) @map("emitido_em") @db.Timestamptz(6)
+  criadoEm     DateTime        @default(now()) @map("criado_em") @db.Timestamptz(6)
+  evento       Evento          @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  inscricao    EventoInscricao @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+  @@index([tenantId, eventoId])
+  @@map("evento_certificados")
 }

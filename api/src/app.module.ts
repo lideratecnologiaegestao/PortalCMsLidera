@@ -31,6 +31,11 @@ import { BannersModule } from './modules/banners/banners.module';
 import { NoticiasModule } from './modules/noticias/noticias.module';
 import { SecretariasModule } from './modules/secretarias/secretarias.module';
 import { ParlamentarModule } from './modules/parlamentar/parlamentar.module';
+import { SessoesModule } from './modules/sessoes/sessoes.module';
+import { LegislativoModule } from './modules/legislativo/legislativo.module';
+import { EscolaModule } from './modules/escola/escola.module';
+import { PssModule } from './modules/pss/pss.module';
+import { EventosModule } from './modules/eventos/eventos.module';
 import { PrefeitoModule } from './modules/prefeito/prefeito.module';
 import { HistoriaModule } from './modules/historia/historia.module';
 import { HinoBrasaoModule } from './modules/hino-brasao/hino-brasao.module';
@@ -107,6 +112,11 @@ import { CampanhasModule } from './modules/campanhas/campanhas.module';
     NoticiasModule, // notícias/imprensa da home
     SecretariasModule, // secretarias municipais
     ParlamentarModule, // L1 — vereadores, mesa diretora, comissões (câmara)
+    SessoesModule, // L2 — sessões plenárias, pauta, ata, presença, TV Câmara (câmara)
+    LegislativoModule, // L3 — proposições, tramitação, votação, leis (câmara)
+    EscolaModule, // L4 — Escola Legislativa: cursos, provas, certificados (câmara)
+    PssModule, // L5 — Processo Seletivo Simplificado: editais, inscrição, ranking (câmara)
+    EventosModule, // L6 — eventos & audiências públicas (câmara)
     PrefeitoModule,    // cadastro do Prefeito(a)/Vice + galeria de ex-prefeitos
     HistoriaModule,    // página "História do Município" (texto rico HTML/MD)
     HinoBrasaoModule,  // página "Hino e Brasão" (letra + mídia + brasões)

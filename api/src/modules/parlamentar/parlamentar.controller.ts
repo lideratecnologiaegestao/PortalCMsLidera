@@ -119,6 +119,14 @@ export class ParlamentarAdminController {
   }
 
   // comissões
+  @Get('comissoes')
+  listarComissoes() {
+    return this.service.listarComissoesAdmin();
+  }
+  @Get('comissoes/:id')
+  comissao(@Param('id') id: string) {
+    return this.service.comissaoAdmin(id);
+  }
   @Post('comissoes')
   criarComissao(@Body() dto: CriarComissaoDto) {
     return this.service.criarComissao(dto);

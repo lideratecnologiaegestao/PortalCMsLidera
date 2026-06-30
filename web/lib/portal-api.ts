@@ -476,3 +476,231 @@ export async function getVereador(slug: string): Promise<any | null> {
     return null;
   }
 }
+
+// ── L2 Sessões Plenárias ────────────────────────────────────────────────────
+export async function getSessoes(params?: {
+  tipo?: string; status?: string; de?: string; ate?: string;
+}): Promise<import('./portal-types').SessaoResumo[]> {
+  try {
+    const sp = new URLSearchParams();
+    if (params?.tipo) sp.set('tipo', params.tipo);
+    if (params?.status) sp.set('status', params.status);
+    if (params?.de) sp.set('de', params.de);
+    if (params?.ate) sp.set('ate', params.ate);
+    const query = sp.toString();
+    const res = await fetch(tenantUrl(`/api/sessoes${query ? `?${query}` : ''}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['sessoes'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getSessao(id: string): Promise<import('./portal-types').SessaoDetalhe | null> {
+  try {
+    const res = await fetch(tenantUrl(`/api/sessoes/${encodeURIComponent(id)}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: [`sessao:${id}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function getTvCamara(): Promise<import('./portal-types').TvCamara> {
+  const empty: import('./portal-types').TvCamara = { aoVivo: null, proxima: null, ultima: null, acervo: [] };
+  try {
+    const res = await fetch(tenantUrl('/api/tv-camara'), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['tv-camara'] },
+    });
+    if (!res.ok) return empty;
+    return res.json();
+  } catch {
+    return empty;
+  }
+}
+// ── L3 Legislativo ─────────────────────────────────────────────────────────
+export async function getProposicoes(filtros?: {
+  tipo?: string;
+  ano?: string;
+  autor?: string;
+  status?: string;
+}): Promise<import('./portal-types').Proposicao[]> {
+  const sp = new URLSearchParams();
+  if (filtros?.tipo) sp.set('tipo', filtros.tipo);
+  if (filtros?.ano) sp.set('ano', filtros.ano);
+  if (filtros?.autor) sp.set('autor', filtros.autor);
+  if (filtros?.status) sp.set('status', filtros.status);
+  const qs = sp.toString();
+  try {
+    const res = await fetch(tenantUrl(`/api/proposicoes${qs ? `?${qs}` : ''}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['proposicoes'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getProposicao(id: string): Promise<any | null> {
+  try {
+    const res = await fetch(tenantUrl(`/api/proposicoes/${encodeURIComponent(id)}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: [`proposicao:${id}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function getLeis(filtros?: {
+  tipo?: string;
+  ano?: string;
+  vigente?: string;
+}): Promise<import('./portal-types').Lei[]> {
+  const sp = new URLSearchParams();
+  if (filtros?.tipo) sp.set('tipo', filtros.tipo);
+  if (filtros?.ano) sp.set('ano', filtros.ano);
+  if (filtros?.vigente) sp.set('vigente', filtros.vigente);
+  const qs = sp.toString();
+  try {
+    const res = await fetch(tenantUrl(`/api/leis${qs ? `?${qs}` : ''}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['leis'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getLei(id: string): Promise<any | null> {
+  try {
+    const res = await fetch(tenantUrl(`/api/leis/${encodeURIComponent(id)}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: [`lei:${id}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+// ── L4 Escola Legislativa ──────────────────────────────────────────────────
+export async function getCursos(): Promise<import('./portal-types').CursoResumo[]> {
+  try {
+    const res = await fetch(tenantUrl('/api/cursos'), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['cursos'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getCurso(slug: string): Promise<import('./portal-types').CursoDetalhe | null> {
+  try {
+    const res = await fetch(tenantUrl(`/api/cursos/${encodeURIComponent(slug)}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: [`curso:${slug}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function validarCertificado(
+  codigo: string,
+): Promise<import('./portal-types').ValidacaoCertificado> {
+  try {
+    const res = await fetch(tenantUrl(`/api/validar/${encodeURIComponent(codigo)}`), {
+      headers: tenantHeaders(),
+      cache: 'no-store',
+    });
+    if (!res.ok) return { valido: false };
+    return res.json();
+  } catch {
+    return { valido: false };
+  }
+}
+// ── L5 PSS (Processo Seletivo Simplificado) ─────────────────────────────────
+export async function getPssEditais(): Promise<import('./portal-types').PssEdital[]> {
+  try {
+    const res = await fetch(tenantUrl('/api/pss/editais'), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['pss-editais'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getPssEdital(id: string): Promise<import('./portal-types').PssEditalDetalhe | null> {
+  try {
+    const res = await fetch(tenantUrl(`/api/pss/editais/${encodeURIComponent(id)}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: [`pss-edital:${id}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function getPssRanking(id: string): Promise<import('./portal-types').PssRanking | null> {
+  try {
+    const res = await fetch(tenantUrl(`/api/pss/editais/${encodeURIComponent(id)}/ranking`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: [`pss-ranking:${id}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+// ── L6 Eventos & Audiências Públicas ────────────────────────────────────────
+export async function getEventos(tipo?: string): Promise<import('./portal-types').Evento[]> {
+  try {
+    const path = tipo ? `/api/eventos?tipo=${encodeURIComponent(tipo)}` : '/api/eventos';
+    const res = await fetch(tenantUrl(path), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['eventos'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getEvento(idOrSlug: string): Promise<import('./portal-types').EventoDetalhe | null> {
+  try {
+    const res = await fetch(tenantUrl(`/api/eventos/${encodeURIComponent(idOrSlug)}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: [`evento:${idOrSlug}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}

@@ -257,6 +257,7 @@ const MENU_GROUPS: MenuGroup[] = [
         apenasRoles: new Set(['gestor', 'admin_prefeitura', 'servidor', 'super_admin']),
       },
       { href: '/admin/secretarias', label: 'Secretarias', icon: <IconBuilding /> },
+      { href: '/admin/parlamentar', label: 'Parlamentar', icon: <IconPerson /> },
       { href: '/admin/prefeito', label: 'Prefeito / Prefeita', icon: <IconPerson /> },
       { href: '/admin/historia', label: 'História do Município', icon: <IconPages /> },
       { href: '/admin/hino-brasao', label: 'Hino e Brasão', icon: <IconPages /> },

@@ -219,6 +219,26 @@ export class ParlamentarService {
     return this.prisma.db.comissao.delete({ where: { id } }).then(() => ({ excluido: true }));
   }
 
+  /** Lista admin de comissões (inclui inativas). */
+  listarComissoesAdmin() {
+    return this.prisma.db.comissao.findMany({ orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] });
+  }
+  /** Detalhe admin de comissão por id (cargos + documentos; inclui inativas). */
+  async comissaoAdmin(id: string) {
+    const c = await this.prisma.db.comissao.findUnique({
+      where: { id },
+      include: {
+        cargos: {
+          orderBy: { ordem: 'asc' },
+          include: { vereador: { select: { id: true, nomeParlamentar: true, slug: true, partido: true, fotoUrl: true } } },
+        },
+        documentos: { orderBy: { ordem: 'asc' } },
+      },
+    });
+    if (!c) throw new NotFoundException('Comissão não encontrada.');
+    return c;
+  }
+
   // cargos de comissão
   async addCargoComissao(comissaoId: string, dto: CargoComissaoDto) {
     const tenantId = TenantContext.tenantId()!;
