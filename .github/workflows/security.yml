@@ -1,0 +1,66 @@
+name: Security (DevSecOps)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1' # varredura semanal
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  sast:
+    name: SAST (CodeQL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with: { languages: javascript-typescript }
+      - uses: github/codeql-action/analyze@v3
+
+  sca:
+    name: SCA (dependências)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # gate real de SCA: falha o CI em vulnerabilidade HIGH/CRITICAL.
+      # Falsos-positivos/aceites conhecidos → waiver explícito e justificado em
+      # api/.audit-allowlist.json (não usar || true). O gate falha em qualquer
+      # HIGH/CRITICAL fora do allowlist.
+      - name: npm audit (api) — gate com waiver explícito
+        run: cd api && node scripts/audit-gate.mjs
+      - name: npm audit (web)
+        run: cd web && npm audit --audit-level=high
+      # Vulnerabilidade de dependências JS já é gated pelos passos de npm audit
+      # acima (api via audit-gate com waiver explícito em .audit-allowlist.json;
+      # web em --audit-level=high). Aqui o Trivy cobre misconfig (IaC) e secret —
+      # evita manter a MESMA lista de CVEs em dois lugares (a base do Trivy muda
+      # com frequência). Não é afrouxar o gate: vuln continua coberto.
+      - name: Trivy filesystem (misconfig + secret)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scanners: misconfig,secret
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+  secrets:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+
+  iac:
+    name: IaC scan (Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bridgecrewio/checkov-action@master
+        with: { directory: infra, soft_fail: false }
+
+# Gate: PR não mergeia com vulnerabilidade HIGH/CRITICAL sem waiver aprovado.

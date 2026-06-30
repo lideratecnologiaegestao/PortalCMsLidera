@@ -1,0 +1,72 @@
+# deps
+node_modules/
+# build
+dist/
+.next/
+build/
+# env e segredos
+.env
+.env.*
+!.env.example
+!.env.prod.example
+*.pem
+*.p12
+*.pfx
+*.key
+*.crt
+secrets/
+# credenciais e arquivos sensíveis (NUNCA versionar)
+docs/CREDENCIAIS-PRODUCAO.md
+**/CREDENCIAIS*.md
+*.tmp.json
+.upload.tmp.json
+# artefatos de ferramentas
+.playwright-mcp/
+.mcp.local.json
+# temporários de geração do portfólio (render/preview)
+portfolio/_render/
+portfolio/_*.html
+# ETL de migração: manter só o código-fonte da ferramenta, NÃO o conteúdo raspado
+# (1.5 GB de HTML/JSON do site real = bloat + dado pessoal de cidadãos)
+migration/cache/
+migration/state/
+migration/.cache/
+*.zip
+# claude code local
+.claude/settings.local.json
+# logs / sistema
+*.log
+.DS_Store
+coverage/
+# mobile
+.expo/
+
+# SEGREDOS DE ASSINATURA / EAS — NUNCA commitar (keystore = chave de assinatura do app)
+expo/
+*.jks
+*.keystore
+*-keystore-credentials.md
+mobile/credentials.json
+EXPO_TOKEN
+.env.eas
+
+# Scratch de prompts / rascunhos e materiais internos (exemplos clonados, zips,
+# .docx de propostas/LGPD). Não versionar — não faz parte do produto.
+prompts/
+# Propostas comerciais por cliente (sensível — não versionar)
+portfolio/Propostas/
+
+# Artefatos de build e screenshots de desenvolvimento (não versionar)
+*.tsbuildinfo
+/campanhas-*.png
+/barao-aedes-*.jpeg
+
+# Storage de runtime do ambiente de dev (uploads/PDFs gerados pela API; NÃO é fonte)
+api/storage-dev/
+
+# Terraform — artefatos locais (providers, state, locks gerados no validate/apply)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
