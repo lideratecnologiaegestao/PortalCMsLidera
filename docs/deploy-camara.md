@@ -87,13 +87,22 @@ C:\nginx\nginx.exe -p C:\nginx\ -s reload
 
 > **Domínio oficial .leg.br:** para apontar `serranovadourada.mt.leg.br` (do sistema antigo), acrescente-o no `server_name` do `camara.conf` E **remova `*.mt.leg.br` do `prefeitura.conf`** (hoje a prefeitura captura todo `*.mt.leg.br`). Depois `nginx -t` + reload.
 
-## 5. Cloudflare Zero Trust + DNS (MANUAL — feito por você no painel)
+## 5. Domínios e Cloudflare Zero Trust
 
-1. **Cloudflare ZT → Networks → Tunnels → (tunnel da Lidera) → Public Hostnames → Add a public hostname:**
-   - Subdomain: `*` · Domain: `camara.lidera.app.br` (ou crie por câmara, ex. `camara-snd` + `camara.lidera.app.br`)
-   - Service: `HTTP` → `localhost:80`
-2. **DNS:** garantir que `*.camara.lidera.app.br` (ou o subdomínio específico) resolve pelo Cloudflare para o tunnel.
-3. O Nginx já roteia pelo `Host:` — nada mais a configurar do lado dele.
+### Painel geral (plataforma) — JÁ funciona, sem mexer no Cloudflare
+`camara.lidera.app.br` é o **painel geral** (modo plataforma / super_admin que gerencia todas as câmaras). É rótulo único sob `lidera.app.br`, então **já é coberto pelo wildcard `*.lidera.app.br`** existente no Cloudflare → chega ao Nginx → vhost da câmara.
+- UI: **`https://camara.lidera.app.br/plataforma`** (Gerenciador da Plataforma)
+- API: `https://camara.lidera.app.br/api/_platform/...` (exige login super_admin)
+- Ativado por `PLATFORM_HOST=camara.lidera.app.br` no `.env.prod`.
+
+### Câmaras individuais — `<slug>.camara.lidera.app.br`
+Cada câmara é um subdomínio de DOIS rótulos (`serra-nova.camara.lidera.app.br`), que **não** é coberto pelo `*.lidera.app.br` (curinga de 1 rótulo). Para isso, adicionar UMA vez no Cloudflare ZT:
+1. **Cloudflare ZT → Networks → Tunnels → (tunnel da Lidera) → Public Hostnames → Add:**
+   - Subdomain `*` · Domain `camara.lidera.app.br` · Service `HTTP` → `localhost:80`
+2. **DNS:** `*.camara.lidera.app.br` resolvendo pelo Cloudflare para o tunnel.
+3. O Nginx (vhost `camara.conf`, `server_name camara.lidera.app.br *.camara.lidera.app.br`) já roteia pelo `Host:` — nada mais a configurar.
+
+> Precedência: ambos (`camara.lidera.app.br` exato e `*.camara.lidera.app.br`) são mais específicos que o `*.lidera.app.br` da prefeitura → o Nginx prioriza a stack da câmara, sem tocar no `prefeitura.conf`.
 
 ## 6. Pós-deploy — criar uma câmara real (tenant)
 
