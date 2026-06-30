@@ -6,6 +6,8 @@ import {
   EscolaPublicController,
 } from './escola.controller';
 import { EscolaService } from './escola.service';
+import { CertificadoPdfService } from './certificado-pdf.service';
+import { StorageService } from '../storage/storage.service';
 
 /**
  * L4 Escola Legislativa — cursos (módulos → aulas EditorJS), provas (objetivas
@@ -21,7 +23,7 @@ import { EscolaService } from './escola.service';
     EscolaProfessorController,
     EscolaAdminController,
   ],
-  providers: [EscolaService],
+  providers: [EscolaService, CertificadoPdfService, StorageService],
   exports: [EscolaService],
 })
 export class EscolaModule {}

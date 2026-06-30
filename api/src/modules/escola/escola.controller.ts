@@ -7,8 +7,10 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../../common/rbac/roles.decorator';
 import { Role } from '../../common/rbac/roles.enum';
@@ -124,9 +126,20 @@ export class EscolaAlunoController {
   certificados(@CurrentUser() user: AuthUser) {
     return this.service.meusCertificados(user.sub);
   }
+  /** Streama o PDF do certificado (gera on-demand na 1ª vez; idempotente). */
   @Get('certificados/:id/download')
-  download(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.service.certificadoParaDownload(id, user.sub);
+  async download(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Res() res: Response,
+  ) {
+    const { buffer, filename } = await this.service.certificadoParaDownload(id, user.sub);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': String(buffer.length),
+    });
+    res.send(buffer);
   }
 
   // fórum

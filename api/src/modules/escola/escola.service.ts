@@ -2,6 +2,8 @@ import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundEx
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
+import { StorageService } from '../storage/storage.service';
+import { CertificadoPdfService } from './certificado-pdf.service';
 import {
   AtualizarAulaDto,
   AtualizarCursoDto,
@@ -54,7 +56,11 @@ function gerarCodigo(): string {
 export class EscolaService {
   private readonly logger = new Logger(EscolaService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+    private readonly certificadoPdf: CertificadoPdfService,
+  ) {}
 
   // ===================================================== Cursos (público)
   listarPublicos() {
@@ -520,12 +526,75 @@ export class EscolaService {
     });
   }
 
-  /** Download/metadados do certificado do próprio aluno. */
-  async certificadoParaDownload(id: string, userId: string) {
+  /**
+   * Download do PDF do certificado do próprio aluno. Idempotente: se o PDF já
+   * foi gerado (pdfStorageKey), apenas lê do storage; senão renderiza a partir
+   * do template (placeholders + QR de validação pública), salva e grava o
+   * ponteiro. Retorna { buffer, filename } para o controller streamar.
+   */
+  async certificadoParaDownload(id: string, userId: string): Promise<{ buffer: Buffer; filename: string }> {
     const cert = await this.prisma.db.cursoCertificado.findUnique({ where: { id } });
     if (!cert || cert.userId !== userId) throw new NotFoundException('Certificado não encontrado.');
-    // Geração de PDF/QR reusa o serviço existente da plataforma (on-demand).
-    return cert;
+
+    const filename = `certificado-${cert.codigo}.pdf`;
+
+    // Já gerado: serve direto do storage (idempotente).
+    if (cert.pdfStorageKey) {
+      const { buffer } = await this.storage.get(cert.pdfStorageKey);
+      return { buffer, filename };
+    }
+
+    // Carrega o template (com layout aninhado) quando houver; senão usa padrão.
+    const template = cert.templateId
+      ? await this.prisma.db.certificateTemplate.findUnique({
+          where: { id: cert.templateId },
+          include: { textos: true, elementos: true, fotos: true },
+        })
+      : null;
+
+    const urlValidacao = await this.urlValidacaoPublica(cert.codigo);
+
+    const buffer = await this.certificadoPdf.gerarPdf(
+      {
+        codigo: cert.codigo,
+        nomeAluno: cert.nomeAluno,
+        tituloCurso: cert.tituloCurso,
+        cargaHoraria: cert.cargaHoraria,
+        templateId: cert.templateId,
+        emitidoEm: cert.emitidoEm,
+      },
+      template as any,
+      urlValidacao,
+    );
+
+    const tenantId = TenantContext.tenantId()!;
+    const key = await this.storage.put('certificados', buffer, 'application/pdf');
+    await this.prisma.db.cursoCertificado.update({
+      where: { id: cert.id },
+      data: { pdfStorageKey: key, pdfUrl: urlValidacao, qrUrl: urlValidacao },
+    });
+    await this.audit(tenantId, userId, 'CERTIFICADO_PDF_GERADO', 'curso_certificados', cert.id, { codigo: cert.codigo });
+
+    return { buffer, filename };
+  }
+
+  /**
+   * URL pública de validação do certificado (entra no QR e em qr_url).
+   * Reaproveita o padrão de host do diário: domínio próprio do tenant ou
+   * subdomínio na PLATFORM_BASE_DOMAIN. A rota pública é GET /api/validar/:codigo.
+   */
+  private async urlValidacaoPublica(codigo: string): Promise<string> {
+    const tenantId = TenantContext.tenantId();
+    const base = process.env.PLATFORM_BASE_DOMAIN ?? 'lidera.app.br';
+    let host = `portal.${base}`;
+    if (tenantId) {
+      const tenant = await this.prisma.platform().tenant.findUnique({
+        where: { id: tenantId },
+        select: { dominio: true, slug: true },
+      });
+      host = tenant?.dominio ?? `${tenant?.slug ?? 'portal'}.${base}`;
+    }
+    return `https://${host}/api/validar/${codigo}`;
   }
 
   // ===================================================== Fórum (aluno/professor)
