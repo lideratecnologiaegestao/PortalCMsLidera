@@ -580,8 +580,11 @@ export class EscolaService {
 
   /**
    * URL pública de validação do certificado (entra no QR e em qr_url).
-   * Reaproveita o padrão de host do diário: domínio próprio do tenant ou
-   * subdomínio na PLATFORM_BASE_DOMAIN. A rota pública é GET /api/validar/:codigo.
+   * O QR é escaneado por uma pessoa → deve abrir a PÁGINA WEB de validação
+   * (`/validar/:codigo`), não o endpoint JSON da API. O host precisa ser o que
+   * o nginx realmente roteia para esta câmara: domínio próprio (se houver) ou
+   * o `subdominio` (ex.: cmserranova.lidera.app.br) — nunca o `slug`, que não
+   * está no server_name. Mesmo padrão de host público do diário.
    */
   private async urlValidacaoPublica(codigo: string): Promise<string> {
     const tenantId = TenantContext.tenantId();
@@ -590,11 +593,12 @@ export class EscolaService {
     if (tenantId) {
       const tenant = await this.prisma.platform().tenant.findUnique({
         where: { id: tenantId },
-        select: { dominio: true, slug: true },
+        select: { dominio: true, subdominio: true, slug: true },
       });
-      host = tenant?.dominio ?? `${tenant?.slug ?? 'portal'}.${base}`;
+      const sub = tenant?.subdominio ?? tenant?.slug ?? 'portal';
+      host = tenant?.dominio ?? `${sub}.${base}`;
     }
-    return `https://${host}/api/validar/${codigo}`;
+    return `https://${host}/validar/${codigo}`;
   }
 
   // ===================================================== Fórum (aluno/professor)
