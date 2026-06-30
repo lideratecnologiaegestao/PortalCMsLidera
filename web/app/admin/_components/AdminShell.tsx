@@ -8,6 +8,7 @@ import type { Perfil } from '../../../lib/auth';
 import {
   resolverFuncionalidades,
   type Funcionalidades,
+  type FuncionalidadesMap,
   type Modulo,
 } from '../../../lib/funcionalidades';
 
@@ -724,20 +725,23 @@ function Topbar({
 
 export default function AdminShell({
   perfil,
-  funcionalidades,
+  funcTipo,
+  funcFlags,
   children,
 }: {
   perfil: Perfil;
   /**
-   * Funcionalidades do tenant (tipo + flags). Opcional: quando ausente, assume
-   * o default de CÂMARA (esconde módulos do executivo). O wiring per-tenant
-   * (via getFuncionalidades no layout) é aplicado na fase de validação.
+   * Tipo de entidade + flags do tenant — APENAS dados serializáveis (Server →
+   * Client). O objeto `Funcionalidades` (que tem a função `modulo()`) é
+   * RECONSTRUÍDO aqui no client; não pode cruzar a fronteira RSC como prop.
+   * Ausente => default de CÂMARA (esconde módulos do executivo).
    */
-  funcionalidades?: Funcionalidades;
+  funcTipo?: string;
+  funcFlags?: FuncionalidadesMap;
   children: React.ReactNode;
 }) {
   const [sidebarAberta, setSidebarAberta] = useState(false);
-  const flags = funcionalidades ?? resolverFuncionalidades('camara', null);
+  const flags = resolverFuncionalidades(funcTipo ?? 'camara', funcFlags ?? null);
 
   return (
     <SessaoAdminProvider sessao={{ id: perfil.id, role: perfil.role }}>

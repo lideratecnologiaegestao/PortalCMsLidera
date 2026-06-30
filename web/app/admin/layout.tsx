@@ -48,7 +48,7 @@ export default async function AdminLayout({
   // funcionalidades gateia os módulos por tipo de entidade (câmara × prefeitura).
   return (
     <>
-      <AdminShell perfil={perfil} funcionalidades={funcionalidades}>
+      <AdminShell perfil={perfil} funcTipo={funcionalidades.tipo} funcFlags={funcionalidades.flags}>
         {children}
       </AdminShell>
       <ChatWidget meuId={perfil.id} />
