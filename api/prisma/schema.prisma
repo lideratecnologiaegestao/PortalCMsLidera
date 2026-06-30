@@ -2508,3 +2508,146 @@ model CampaignActivationLog {
   @@index([tenantId, campaignId])
   @@map("campaign_activation_log")
 }
+
+// =====================================================================
+// L1 Parlamentar (db/103_parlamentar.sql) — Vereadores, Mesa, Comissões
+// =====================================================================
+
+model Vereador {
+  id              String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String                  @map("tenant_id") @db.Uuid
+  userId          String?                 @map("user_id") @db.Uuid
+  nome            String
+  nomeParlamentar String                  @map("nome_parlamentar")
+  slug            String?
+  partido         String?
+  status          String                  @default("ativo")
+  legislatura     String?
+  mandatoInicio   DateTime?               @map("mandato_inicio") @db.Date
+  mandatoFim      DateTime?               @map("mandato_fim") @db.Date
+  email           String?
+  telefone        String?
+  fotoUrl         String?                 @map("foto_url")
+  biografia       String?
+  redes           Json                    @default("{}")
+  ordem           Int                     @default(0)
+  ativo           Boolean                 @default(true)
+  criadoEm        DateTime                @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm    DateTime                @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  mesaCargos      VereadorMesaCargo[]
+  comissaoCargos  ComissaoCargo[]
+  posts           VereadorPost[]
+  representacoes  VereadorRepresentacao[]
+  @@index([tenantId, ativo, ordem])
+  @@index([tenantId, status])
+  @@map("vereadores")
+}
+
+model VereadorMesaCargo {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  vereadorId  String    @map("vereador_id") @db.Uuid
+  cargo       String
+  inicio      DateTime  @db.Date
+  fim         DateTime? @db.Date
+  legislatura String?
+  ordem       Int       @default(0)
+  criadoEm    DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  vereador    Vereador  @relation(fields: [vereadorId], references: [id], onDelete: Cascade)
+  @@index([tenantId, cargo, inicio])
+  @@index([tenantId, vereadorId])
+  @@map("vereador_mesa_cargos")
+}
+
+model Comissao {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String              @map("tenant_id") @db.Uuid
+  nome         String
+  slug         String?
+  tipo         String              @default("permanente")
+  descricao    String?
+  legislatura  String?
+  ativo        Boolean             @default(true)
+  ordem        Int                 @default(0)
+  criadoEm     DateTime            @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime            @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  cargos       ComissaoCargo[]
+  documentos   ComissaoDocumento[]
+  @@index([tenantId, ativo, ordem])
+  @@map("comissoes")
+}
+
+model ComissaoCargo {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  comissaoId  String    @map("comissao_id") @db.Uuid
+  vereadorId  String    @map("vereador_id") @db.Uuid
+  cargo       String    @default("membro")
+  inicio      DateTime? @db.Date
+  fim         DateTime? @db.Date
+  ordem       Int       @default(0)
+  criadoEm    DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  comissao    Comissao  @relation(fields: [comissaoId], references: [id], onDelete: Cascade)
+  vereador    Vereador  @relation(fields: [vereadorId], references: [id], onDelete: Cascade)
+  @@index([tenantId, comissaoId, ordem])
+  @@index([tenantId, vereadorId])
+  @@map("comissao_cargos")
+}
+
+model ComissaoDocumento {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  comissaoId String   @map("comissao_id") @db.Uuid
+  titulo     String
+  arquivoUrl String?  @map("arquivo_url")
+  storageKey String?  @map("storage_key")
+  ordem      Int      @default(0)
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  comissao   Comissao @relation(fields: [comissaoId], references: [id], onDelete: Cascade)
+  @@index([tenantId, comissaoId, ordem])
+  @@map("comissao_documentos")
+}
+
+model VereadorPost {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  vereadorId  String              @map("vereador_id") @db.Uuid
+  titulo      String?
+  conteudo    String?
+  publicado   Boolean             @default(true)
+  publicadoEm DateTime            @default(now()) @map("publicado_em") @db.Timestamptz(6)
+  criadoEm    DateTime            @default(now()) @map("criado_em") @db.Timestamptz(6)
+  vereador    Vereador            @relation(fields: [vereadorId], references: [id], onDelete: Cascade)
+  midias      VereadorPostMidia[]
+  @@index([tenantId, vereadorId, publicadoEm])
+  @@map("vereador_posts")
+}
+
+model VereadorPostMidia {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String       @map("tenant_id") @db.Uuid
+  postId     String       @map("post_id") @db.Uuid
+  tipo       String       @default("foto")
+  url        String?
+  storageKey String?      @map("storage_key")
+  ordem      Int          @default(0)
+  criadoEm   DateTime     @default(now()) @map("criado_em") @db.Timestamptz(6)
+  post       VereadorPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([tenantId, postId, ordem])
+  @@map("vereador_post_midias")
+}
+
+model VereadorRepresentacao {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  vereadorId   String   @map("vereador_id") @db.Uuid
+  tipo         String   @default("sugestao")
+  assunto      String
+  descricao    String?
+  status       String   @default("aberta")
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(6)
+  vereador     Vereador @relation(fields: [vereadorId], references: [id], onDelete: Cascade)
+  @@index([tenantId, vereadorId, criadoEm])
+  @@map("vereador_representacoes")
+}

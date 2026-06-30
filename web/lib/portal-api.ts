@@ -423,3 +423,56 @@ export async function getBusca(
     return empty;
   }
 }
+
+// ── L1 Parlamentar ─────────────────────────────────────────────────────────
+export async function getVereadores(): Promise<import('./portal-types').Vereador[]> {
+  try {
+    const res = await fetch(tenantUrl('/api/vereadores'), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['vereadores'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getMesaDiretora(): Promise<import('./portal-types').MesaCargo[]> {
+  try {
+    const res = await fetch(tenantUrl('/api/mesa-diretora'), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['mesa-diretora'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getComissoes(): Promise<import('./portal-types').Comissao[]> {
+  try {
+    const res = await fetch(tenantUrl('/api/comissoes'), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: ['comissoes'] },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function getVereador(slug: string): Promise<any | null> {
+  try {
+    const res = await fetch(tenantUrl(`/api/vereadores/${encodeURIComponent(slug)}`), {
+      headers: tenantHeaders(),
+      next: { revalidate: REVALIDATE, tags: [`vereador:${slug}`] },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}

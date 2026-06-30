@@ -187,3 +187,34 @@ export interface BuscaResult {
   pageSize: number;
   resultados: BuscaResultado[];
 }
+
+// ── L1 Parlamentar (vereadores, mesa diretora, comissões) ──────────────────
+export interface Vereador {
+  id: string;
+  nome: string;
+  nomeParlamentar: string;
+  slug?: string | null;
+  partido?: string | null;
+  status: string;
+  legislatura?: string | null;
+  fotoUrl?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+}
+
+export interface MesaCargo {
+  cargo: string;
+  inicio: string;
+  fim?: string | null;
+  legislatura?: string | null;
+  vereador: Pick<Vereador, 'id' | 'nomeParlamentar' | 'slug' | 'partido' | 'fotoUrl'>;
+}
+
+export interface Comissao {
+  id: string;
+  nome: string;
+  slug?: string | null;
+  tipo: string;
+  descricao?: string | null;
+  legislatura?: string | null;
+}
