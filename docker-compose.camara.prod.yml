@@ -67,6 +67,10 @@ services:
     image: portal-camara-web:latest
     build:
       context: ./web
+      args:
+        # Host do painel geral: o middleware do Next reescreve "/" -> "/plataforma"
+        # neste host (URL fica limpa em camara.lidera.app.br). Inlined no build.
+        NEXT_PUBLIC_PLATFORM_HOST: ${PLATFORM_HOST:-camara.lidera.app.br}
     container_name: camara-web
     restart: always
     environment:

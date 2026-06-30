@@ -78,7 +78,7 @@ Câmaras e prefeituras compartilham o espaço `*.lidera.app.br`. O Nginx decide 
 
 | Host | Destino |
 |---|---|
-| `camara.lidera.app.br` | **Painel geral** (plataforma); `/` → `/plataforma` |
+| `camara.lidera.app.br` | **Painel geral** (plataforma); painel servido na própria raiz (URL limpa) |
 | `<slug>.lidera.app.br` (listado no vhost) | Câmara (tenant pelo subdomínio) |
 | `*.lidera.app.br` (resto) | Prefeitura (`prefeitura.conf`, intacto) |
 
@@ -98,7 +98,9 @@ Restart-Service nginx   # `-s reload` falha: Nginx roda como serviço (LocalSyst
 
 **Nada a fazer por câmara** — como tudo vive em `*.lidera.app.br` (1 rótulo) e o wildcard `*.lidera.app.br` **já existe** no Cloudflare ZT apontando para `HTTP localhost:80`, qualquer `<slug>.lidera.app.br` e o próprio `camara.lidera.app.br` já chegam ao Nginx. O roteamento câmara/prefeitura é 100% do Nginx (seção 4).
 
-- Painel geral: **`https://camara.lidera.app.br`** → redireciona para **`/plataforma`** (Gerenciador da Plataforma; login super_admin). Ativado por `PLATFORM_HOST=camara.lidera.app.br`.
+- Painel geral: **`https://camara.lidera.app.br`** já abre o **Gerenciador da Plataforma** na raiz (o middleware do Next reescreve `/`→`/plataforma`, sem mudar a URL; login super_admin).
+  - API: ativada por `PLATFORM_HOST=camara.lidera.app.br` (runtime).
+  - Web: ativada por `NEXT_PUBLIC_PLATFORM_HOST=camara.lidera.app.br` — **inlined no BUILD** (build arg do `docker-compose.camara.prod.yml`); rebuildar o web ao mudar.
 - `PLATFORM_BASE_DOMAIN=lidera.app.br` faz `<slug>.lidera.app.br` resolver o tenant de subdomínio `<slug>` no banco da câmara.
 
 ## 6. Pós-deploy — criar uma câmara real (tenant)

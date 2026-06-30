@@ -1,6 +1,11 @@
 # ---------- build ----------
 FROM node:20-alpine AS build
 WORKDIR /app
+# NEXT_PUBLIC_* são inlined no build (não lidos em runtime). O host de plataforma
+# (super_admin) precisa ser conhecido no build para o middleware reescrever "/"
+# -> "/plataforma" no host certo. Default mantém compat com a prefeitura.
+ARG NEXT_PUBLIC_PLATFORM_HOST=prefeitura.lidera.app.br
+ENV NEXT_PUBLIC_PLATFORM_HOST=$NEXT_PUBLIC_PLATFORM_HOST
 COPY package*.json ./
 RUN npm ci
 COPY . .
