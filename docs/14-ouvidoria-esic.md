@@ -65,8 +65,8 @@ retoma automaticamente** (`TramitacaoService.mensagemCidadao` → evento
 | GET | `/:id/tramitacao` | chat completo (inclui mensagens internas) + eventos |
 | POST | `/:id/mensagem` | `{conteudo, interno}` — mensagem ao cidadão ou interna (ouvidor↔área) |
 | POST | `/:id/responder` | `{conteudo}` — publica resposta oficial e encerra o SLA |
-| POST | `/:id/encaminhar` | `{secretariaId?, responsavelId?, observacao?}` — atribui + tramitação interna + transição |
-| PATCH | `/:id` | atribuição (responsável/secretaria) |
+| POST | `/:id/encaminhar` | `{setorId?, responsavelId?, observacao?}` — atribui + tramitação interna + transição |
+| PATCH | `/:id` | atribuição (responsável/setor ou comissão) |
 | POST | `/api/manifestacoes/:id/eventos/:evento` | transição avulsa da FSM |
 
 ## Frontend
@@ -80,7 +80,7 @@ login gov.br), `/acompanhar` (protocolo+chave → status + chat + avaliação),
 Ouvidor), `/admin/ouvidoria`, `/admin/esic`, `/admin/minhas-atribuicoes` (fila
 do servidor). O detalhe ganhou `TramitacaoAdmin`: chat (incl. interno), enviar
 ao cidadão, **responder e encerrar prazo**, **encaminhar à área** (seletores de
-secretaria e responsável).
+setor/comissão e responsável).
 
 **Home:** `SecaoOuvidoriaEsic` — KPIs (total, % no prazo, tempo médio, em
 andamento) + gráfico de volume mensal (SVG) + proporção por canal, com CTAs.
@@ -133,10 +133,11 @@ Módulo `notificacoes` (`api/src/modules/notificacoes/`):
     com destinatário **mascarado**.
   - **LGPD:** a mensagem traz só `protocolo + ação + link` (cidadão→`/acompanhar`,
     interno→`/admin/ouvidor`) — nunca o teor.
-- **E-mail é POR TENANT (migration 023).** Cada prefeitura tem domínio e caixa
+- **E-mail é POR TENANT (migration 023).** Cada câmara tem domínio e caixa
   próprios → a config SMTP/IMAP fica em `tenant_email_config` (RLS), editada no
   **painel da entidade** em `/admin/email` (`/api/admin/config/email`,
-  admin_prefeitura). A senha do SMTP é **cifrada em repouso** (AES-256-GCM com
+  admin_prefeitura — o papel do Administrador da Câmara, mantido com esse nome no
+  banco). A senha do SMTP é **cifrada em repouso** (AES-256-GCM com
   chave derivada do `AUTH_JWT_SECRET` — `common/crypto/secret-box.util.ts`) e
   nunca é devolvida pela API. `EmailService` resolve a config do tenant atual no
   envio (cache de transporter por tenant) e lança `EmailNaoConfigurado` se não

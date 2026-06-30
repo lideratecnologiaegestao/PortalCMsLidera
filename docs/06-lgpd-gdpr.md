@@ -1,6 +1,6 @@
 # 06 — LGPD & GDPR
 
-Conformidade com a **LGPD (Lei 13.709/2018)** e, para titulares na UE, **GDPR**. No setor público, o tratamento se apoia sobretudo em **execução de políticas públicas** e **cumprimento de obrigação legal/regulatória** — o consentimento é exceção.
+Conformidade com a **LGPD (Lei 13.709/2018)** e, para titulares na UE, **GDPR**. No setor público (incluindo o Poder Legislativo municipal), o tratamento se apoia sobretudo em **execução de políticas públicas / exercício de competências legais** e **cumprimento de obrigação legal/regulatória** — o consentimento é exceção.
 
 ---
 
@@ -11,8 +11,8 @@ Conformidade com a **LGPD (Lei 13.709/2018)** e, para titulares na UE, **GDPR**.
 | Cadastro do cidadão (gov.br) | Identificar para prestar serviço | Execução de política pública (art. 7º, III) | Tarefa de interesse público (6.1.e) |
 | ESIC | Cumprir a LAI | Obrigação legal (art. 7º, II) | Obrigação legal (6.1.c) |
 | Ouvidoria/denúncia | Apurar e responder | Obrigação legal / interesse público (art. 7º, II e III) | Tarefa de interesse público (6.1.e) |
-| Chamados (app) | Atender demanda urbana | Execução de política pública (art. 7º, III) | Tarefa de interesse público (6.1.e) |
-| Newsletter/comunicação opcional | Informar | Consentimento (art. 7º, I) | Consentimento (6.1.a) |
+| Solicitações ao Legislativo (app) | Atender demanda do cidadão (audiência, inscrição em sessão/evento) | Execução de política pública / competência legal (art. 7º, III) | Tarefa de interesse público (6.1.e) |
+| Newsletter/comunicação opcional (TV Câmara, agenda de sessões) | Informar | Consentimento (art. 7º, I) | Consentimento (6.1.a) |
 | IA (triagem/RAG) | Eficiência no atendimento | Interesse público + revisão humana (art. 7º, III) | Interesse público (6.1.e) |
 | Transparência ativa — folha | Cumprir LC 131/2009 + LRF | Obrigação legal (art. 7º, II) | Obrigação legal (6.1.c) |
 | CPF de cidadão em `users` | Deduplicação cross-tenant e login gov.br | Execução de política pública (art. 7º, III) | Tarefa de interesse público (6.1.e) |
@@ -24,7 +24,7 @@ Conformidade com a **LGPD (Lei 13.709/2018)** e, para titulares na UE, **GDPR**.
 
 - **Minimização:** coletar só o necessário. **Denúncia pode ser anônima** — nunca forçar identificação.
 - **Finalidade e adequação:** cada dado tem finalidade declarada; não reaproveitar fora dela.
-- **Transparência:** aviso de privacidade por tenant; Carta de Serviços.
+- **Transparência:** aviso de privacidade por tenant; Carta de Serviços ao Cidadão da Câmara.
 - **Segurança:** RLS por tenant, criptografia em trânsito e repouso, log de acesso a dado pessoal, segregação de ambientes.
 
 ---
@@ -44,7 +44,7 @@ Cada conjunto de dados tem prazo por finalidade + rotina de eliminação/anonimi
 
 | Conjunto | Prazo de retenção | Ação ao expirar |
 |----------|-------------------|-----------------|
-| `transp_folha` | Enquanto o mandato/exercício vigente + 5 anos (guarda contábil) | Manter dados; sem eliminação — obrigação contínua de transparência |
+| `transp_folha` | Enquanto a legislatura/exercício vigente + 5 anos (guarda contábil) | Manter dados; sem eliminação — obrigação contínua de transparência |
 | `transp_despesas` / `transp_receitas` | Enquanto pertencer ao acervo público | Idem — dados de finanças públicas são permanentes |
 | `users` (cidadão) | Até solicitação de exclusão, respeitando prazos de manifestações ativas | Anonimizar: apagar nome/email/cpf, manter id para trilha de auditoria |
 | `audit_log` | 5 anos (prazo prescricional geral — CC art. 205) | Arquivo frio; purgar após 5 anos |
@@ -59,10 +59,10 @@ Manter tabela viva: tratamento · finalidade · base legal · categorias de dado
 | # | Operação | Categorias de dados | Titulares | Base legal LGPD | Retenção | Compartilhamento | Medidas de segurança |
 |---|----------|--------------------|-----------|-----------------|-----------|--------------------|----------------------|
 | 1 | Login gov.br / cadastro cidadão | nome, e-mail, CPF (hash), govbr_sub, nível confiabilidade | Cidadãos | Art. 7º, III | Enquanto conta ativa + 5 anos | gov.br (OIDC) | RLS, criptografia em trânsito, hash CPF |
-| 2 | Transparência — folha de pagamento | nome_servidor, cargo, vínculo, órgão, remuneração | Servidores públicos | Art. 7º, II | Permanente (acervo público) | Publicação aberta (LC 131) | Sem CPF público; matrícula mascarada na API |
+| 2 | Transparência — folha de pagamento | nome_servidor, cargo, vínculo, órgão, remuneração | Vereadores e servidores da Câmara | Art. 7º, II | Permanente (acervo público) | Publicação aberta (LC 131) | Sem CPF público; matrícula mascarada na API |
 | 3 | Transparência — despesas | credor_nome, credor_doc (CNPJ/CPF) | Credores/fornecedores | Art. 7º, II | Permanente | Publicação aberta | CPF mascarado na API pública |
 | 4 | Manifestações ESIC/Ouvidoria | protocolo, conteúdo, dados do requerente | Cidadãos, servidores | Art. 7º, II/III | 10 anos | Órgão respondente do tenant | RLS, audit_log |
-| 5 | Chamados app cidadão | geolocalização, descrição, foto | Cidadãos | Art. 7º, III | 2 anos ou encerramento + 1 ano | Secretaria competente | RLS, anonimização opcional |
+| 5 | Solicitações/protocolos app cidadão | descrição, anexo, dados de contato | Cidadãos | Art. 7º, III | 2 anos ou encerramento + 1 ano | Comissão/setor competente | RLS, anonimização opcional |
 | 6 | IA (triagem de manifestações) | texto livre de manifestações | Cidadãos | Art. 7º, III + revisão humana | Não persistido além da sessão | API Anthropic (EUA) — ver item transferência int'l | Pseudonimização antes de enviar; sem PII literal |
 | 7 | Auditoria (`audit_log`) | ator_id, ação, entidade, IP implícito | Servidores/cidadãos com conta | Art. 7º, II | 5 anos | Nenhum | Append-only; acesso restrito a super_admin |
 
@@ -74,8 +74,8 @@ Tratamentos de alto risco (IA sobre dados pessoais, monitoramento em larga escal
 
 Tratamentos que exigem DPIA neste projeto:
 - IA sobre conteúdo de manifestações (risco: perfilamento, decisão automatizada).
-- Publicação da folha de pagamento com dados individualizados de servidores (risco: exposição indevida).
-- Geolocalização contínua no app do cidadão (risco: rastreamento).
+- Publicação da folha de pagamento com dados individualizados de vereadores e servidores (risco: exposição indevida).
+- Identificação de cidadãos em manifestações, inscrições em sessões/audiências e gravações da TV Câmara (risco: exposição/registro de presença e opinião política).
 
 ---
 
@@ -103,11 +103,11 @@ Para titulares no Brasil usando a API Anthropic: a LGPD exige que a transferênc
 
 ### Fundamento constitucional e jurisprudência
 
-A publicidade da remuneração de servidores públicos é obrigação constitucional pacificada. O STF, no **ARE 652.777 (Tema 484, rel. Min. Teori Zavascki, 2015)**, fixou a tese de que "é legítima a publicação, inclusive em sítio eletrônico mantido pelo poder público, dos nomes dos seus servidores e do valor dos correspondentes vencimentos e vantagens pecuniárias." A ratio é o princípio da publicidade (CF art. 37) e o controle social sobre o erário. O mesmo entendimento foi reafirmado pelo STJ (REsp 1.630.659-RS).
+A publicidade da remuneração de agentes públicos — incluindo os subsídios de vereadores e a remuneração dos servidores da Câmara — é obrigação constitucional pacificada. O STF, no **ARE 652.777 (Tema 484, rel. Min. Teori Zavascki, 2015)**, fixou a tese de que "é legítima a publicação, inclusive em sítio eletrônico mantido pelo poder público, dos nomes dos seus servidores e do valor dos correspondentes vencimentos e vantagens pecuniárias." A ratio é o princípio da publicidade (CF art. 37) e o controle social sobre o erário. O mesmo entendimento foi reafirmado pelo STJ (REsp 1.630.659-RS).
 
 A LGPD, ao tratar do Poder Público em seus arts. 23 a 26, não revoga esse dever de transparência — ao contrário, o art. 23 §1º determina que as hipóteses de tratamento de dados pelo poder público serão informadas em legislação específica, e a LC 131/2009 é exatamente essa legislação para a folha.
 
-**Conclusão jurídica:** nome do servidor, cargo, vínculo, órgão e remuneração (bruta, descontos e líquida) são de publicação obrigatória e legítima. CPF e dados não previstos na LC 131 não têm amparo para publicação — violaria o princípio da minimização (LGPD art. 6º, III) sem base legal específica.
+**Conclusão jurídica:** nome do vereador/servidor, cargo (ou mandato), vínculo, órgão e remuneração/subsídio (bruto, descontos e líquido) são de publicação obrigatória e legítima. CPF e dados não previstos na LC 131 não têm amparo para publicação — violaria o princípio da minimização (LGPD art. 6º, III) sem base legal específica.
 
 ### Tabela de decisão: campos de `transp_folha`
 
@@ -115,10 +115,10 @@ A LGPD, ao tratar do Poder Público em seus arts. 23 a 26, não revoga esse deve
 |--------|-----------|----------------------|
 | `exercicio` | SIM | Período de referência; necessário para controle social. |
 | `mes` | SIM | Período de referência; necessário para controle social. |
-| `matricula` | MASCARAR | A matrícula identifica o servidor no sistema interno. Não tem amparo de publicação na LC 131 (que exige nome, não número interno). Publicar a matrícula integralmente permitiria cruzamento com outros sistemas e rastreamento indevido. Solução: expor os últimos 4 caracteres precedidos de asteriscos (ex.: `****1234`). Serve para conferência pontual sem ser identificador pleno. |
-| `nome_servidor` | SIM | STF ARE 652.777 — nome é publicável. |
-| `cargo` | SIM | Necessário para contextualizar remuneração; obrigatório pela LC 131. |
-| `vinculo` | SIM | Efetivo/comissionado — relevante para controle; não é dado sensível. |
+| `matricula` | MASCARAR | A matrícula identifica o vereador/servidor no sistema interno. Não tem amparo de publicação na LC 131 (que exige nome, não número interno). Publicar a matrícula integralmente permitiria cruzamento com outros sistemas e rastreamento indevido. Solução: expor os últimos 4 caracteres precedidos de asteriscos (ex.: `****1234`). Serve para conferência pontual sem ser identificador pleno. |
+| `nome_servidor` | SIM | STF ARE 652.777 — nome é publicável (vereador ou servidor). |
+| `cargo` | SIM | Necessário para contextualizar remuneração/subsídio; obrigatório pela LC 131. |
+| `vinculo` | SIM | Mandato eletivo/efetivo/comissionado — relevante para controle; não é dado sensível. |
 | `orgao` | SIM | Órgão pagador; necessário para controle social. |
 | `remuneracao_bruta` | SIM | STF ARE 652.777 — vencimentos e vantagens são publicáveis. |
 | `descontos` | SIM | Necessário para transparência do custo-total; incluso na publicidade. |
@@ -145,7 +145,7 @@ remuneracao_liquida
 
 **Base legal do tratamento:** LGPD art. 7º, II (cumprimento de obrigação legal — LC 131/2009 c/c LRF) e art. 23 (tratamento pelo Poder Público). Finalidade declarada: transparência ativa e controle social sobre despesas de pessoal.
 
-**Nota sobre privacidade reforçada:** servidores afastados por medidas protetivas (violência doméstica, proteção de testemunhas) podem ter o nome suprimido mediante decisão judicial. O backend deve aceitar um campo `nome_suprimido boolean` na tabela (adicionável por migration futura) para suprimir o nome e substituir por "NOME SUPRIMIDO — MEDIDA PROTETIVA", sem alterar os valores financeiros.
+**Nota sobre privacidade reforçada:** vereadores ou servidores afastados por medidas protetivas (violência doméstica, proteção de testemunhas) podem ter o nome suprimido mediante decisão judicial. O backend deve aceitar um campo `nome_suprimido boolean` na tabela (adicionável por migration futura) para suprimir o nome e substituir por "NOME SUPRIMIDO — MEDIDA PROTETIVA", sem alterar os valores financeiros.
 
 ---
 
@@ -188,7 +188,7 @@ A máscara deve ser aplicada **na camada de serviço do backend**, nunca no fron
 O campo `users.cpf varchar(11)` é gravado **em claro** no momento do upsert do cidadão via gov.br (`auth.service.ts`, linha 38: `cpf: identity.cpf ?? undefined`). Isso cria dois riscos:
 
 1. **Risco de vazamento:** qualquer dump de banco, acesso indevido por operador ou bug de RLS expõe o CPF diretamente. CPF é dado pessoal de alta sensibilidade prática (usado para fraudes, abertura de crédito, cruzamento com Receita Federal).
-2. **Risco de correlação cross-tenant:** o mesmo CPF pode existir em múltiplos tenants (mesma pessoa, várias prefeituras). Armazenar em claro cria a possibilidade de correlação não autorizada se houver acesso ao banco com privilégios.
+2. **Risco de correlação cross-tenant:** o mesmo CPF pode existir em múltiplos tenants (mesma pessoa, várias câmaras). Armazenar em claro cria a possibilidade de correlação não autorizada se houver acesso ao banco com privilégios.
 
 ### Análise das opções
 
@@ -228,7 +228,7 @@ Armazenar como `bytea` ou `text` (hex/base64). Indexável. Substituir a coluna `
 - Remover a coluna `cpf varchar(11)`.
 - Atualizar `auth.service.ts` para gravar `cpf_hash` no `create` (e não atualizar no `update`, pois o CPF não muda).
 
-**Salt por tenant vs. pepper de plataforma:** salt por tenant impediria deduplicação cross-tenant (que é um requisito implícito do multi-tenancy: o mesmo cidadão em várias prefeituras). O pepper de plataforma (único, global) é o mecanismo correto aqui, pois mantém a capacidade de deduplicação sem expor o CPF em claro.
+**Salt por tenant vs. pepper de plataforma:** salt por tenant impediria deduplicação cross-tenant (que é um requisito implícito do multi-tenancy: o mesmo cidadão em várias câmaras). O pepper de plataforma (único, global) é o mecanismo correto aqui, pois mantém a capacidade de deduplicação sem expor o CPF em claro.
 
 **Base legal para o CPF em `users`:** LGPD art. 7º, III (execução de política pública — identificação do cidadão para prestação de serviço público digital). Após o login gov.br, o CPF não tem finalidade adicional que justifique sua guarda em claro. O `govbr_sub` cumpre a mesma função com menor risco.
 
@@ -238,7 +238,7 @@ Armazenar como `bytea` ou `text` (hex/base64). Indexável. Substituir a coluna `
 
 | # | Operação | Categorias de dados | Titulares | Base legal LGPD | Retenção | Compartilhamento | Medidas |
 |---|----------|--------------------|-----------|-----------------|-----------|--------------------|---------|
-| 2 | Folha de pagamento (pública) | nome, cargo, vínculo, órgão, remuneração, matrícula mascarada | Servidores públicos | Art. 7º, II (LC 131/2009) | Permanente (acervo público) | Publicação aberta controlada | Sem CPF; sem matrícula completa; matrícula últimos 4 dígitos |
+| 2 | Folha de pagamento (pública) | nome, cargo/mandato, vínculo, órgão, remuneração/subsídio, matrícula mascarada | Vereadores e servidores da Câmara | Art. 7º, II (LC 131/2009) | Permanente (acervo público) | Publicação aberta controlada | Sem CPF; sem matrícula completa; matrícula últimos 4 dígitos |
 | 3 | Despesas com credores PF (pública) | nome do credor, CPF mascarado | Credores pessoa física | Art. 7º, II (LRF) | Permanente | Publicação aberta | CPF mascarado (`***.NNN.NNN-**`) |
 | 1b | CPF de cidadão (`users`) | CPF hash (HMAC-SHA-256 + pepper) | Cidadãos | Art. 7º, III | Enquanto conta ativa + 5 anos | Nenhum | Sem valor em claro; pepper em cofre de segredos; acesso restrito por RLS |
 | 8 | Solicitações de direitos do titular (`solicitacoes_titular`) | FK para users (titular), descrição livre, resposta, anexo opcional | Cidadãos | Art. 7º, II (obrigação legal — LGPD art. 18) | 5 anos após conclusão (CC art. 205) | Encarregado do tenant; nenhum terceiro | RLS por tenant; RBAC (cidadão vê as suas; staff vê todas); audit_log de ações sem conteúdo |

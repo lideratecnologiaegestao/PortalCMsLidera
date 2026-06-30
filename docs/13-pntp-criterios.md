@@ -1,12 +1,12 @@
 # 13 — PNTP 2026 (critérios e caminho para o selo Diamante)
 
-Base de conhecimento do **Programa Nacional de Transparência Pública (PNTP) / Atricon** — metodologia da avaliação (EBT 360°) e a matriz aplicável a uma **prefeitura (Poder Executivo Municipal)**, com o mapa do que o portal precisa entregar para alcançar a **nota máxima (Diamante)**.
+Base de conhecimento do **Programa Nacional de Transparência Pública (PNTP) / Atricon** — metodologia da avaliação (EBT 360°) e a matriz aplicável a uma **câmara municipal (Poder Legislativo Municipal)**, com o mapa do que o portal precisa entregar para alcançar a **nota máxima (Diamante)**.
 
 > A matriz oficial completa fica no hotsite do PNTP / portal da Atricon. Esta doc resume e organiza os critérios para guiar o desenvolvimento; o agente `pntp-auditor` deve **confirmar a classificação exata de cada critério na matriz oficial vigente** antes de pontuar, pois pesos e itens podem mudar a cada ciclo.
 
 ## Como a nota é calculada
 
-A matriz tem **181 critérios** (72 comuns + específicos por Poder/órgão), respondidos como **"atende / não atende"**. Para o Executivo Municipal aplicam-se os **72 comuns + 23 do Executivo + 1 de Executivo/Consórcios** (~96 critérios).
+A matriz tem **181 critérios** (72 comuns + específicos por Poder/órgão), respondidos como **"atende / não atende"**. Para a Câmara Municipal aplicam-se os **72 comuns + os específicos do Legislativo** (dimensão de Atividades Finalísticas: composição da Casa, leis/atos, projetos, pautas, atas, votações nominais, transmissão de sessões, cotas parlamentares). As dimensões setoriais do Executivo (Saúde, Educação/Assistência, Renúncia de Receita, Obras, Convênios) só se aplicam quando a Câmara efetivamente as executa — confirmar na matriz oficial vigente quais critérios incidem sobre o Legislativo.
 
 O índice (0–100%) pondera três pesos:
 
@@ -46,10 +46,10 @@ Itens não aplicáveis a um critério têm seu percentual rateado proporcionalme
 | Renúncia de Receita | 1 | Transparência |
 | Emendas Parlamentares | 1 | Transparência |
 | Saúde | 1 | Transparência (datasets setoriais) |
-| Educação e Assistência Social | 1 | Transparência (datasets setoriais) |
-| Atividades Finalísticas (Legislativo) | 3 | só para tenant Câmara |
+| Educação e Assistência Social | 1 | Transparência (datasets setoriais — só se a Câmara executar) |
+| **Atividades Finalísticas (Legislativo)** | **3** | módulo Legislativo (sessões/projetos/votações) |
 
-As dimensões financeiras (Receita, Despesa, Planejamento/Prestação de Contas — peso 4) e RH/Licitações/Contratos (peso 3) concentram a maior parte da nota: priorizar o ETL da Transparência.
+As dimensões financeiras (Receita, Despesa, Planejamento/Prestação de Contas — peso 4), RH/Licitações/Contratos (peso 3) e a de **Atividades Finalísticas do Legislativo (peso 3)** concentram a maior parte da nota: priorizar o ETL da Transparência e o módulo Legislativo. Critérios setoriais do Executivo (Saúde, Educação, Obras, Convênios, Renúncia) só pontuam para a Câmara quando ela realmente executa essas ações.
 
 ## Níveis (selo)
 
@@ -66,9 +66,11 @@ As dimensões financeiras (Receita, Despesa, Planejamento/Prestação de Contas 
 
 **Regra de ouro:** se **um único critério essencial** ficar sem atender, perde-se o selo, mesmo com índice acima de 95%. Os essenciais são informações de execução orçamentária e financeira (LRF, arts. 48, 48-A e 51 da LC 101/2000) cuja ausência impede transferências voluntárias e operações de crédito.
 
-## Matriz aplicável (Executivo Municipal)
+## Matriz aplicável (Legislativo Municipal)
 
 Critérios por dimensão (texto resumido). Classificação indicativa: **[E]** essencial · **[O]** obrigatório · **[R]** recomendado — confirmar na matriz oficial.
+
+> Os critérios comuns (Prioritárias, Institucionais, Receita/Despesa do orçamento da Câmara, RH, Diárias, Licitações, Contratos, Planejamento/Prestação de Contas, SIC, Acessibilidade, Ouvidoria, LGPD) valem para a Câmara. As dimensões setoriais do Executivo (Obras, Convênios, Saúde, Educação, Renúncia, Emendas) ficam abaixo por herança da matriz comum, mas só incidem na nota da Câmara quando ela executa essas ações — caso contrário entram como "não aplicável" e são rateadas.
 
 ### 1. Informações Prioritárias (peso 2)
 - 1.1 Sítio oficial próprio na internet. **[O]**
@@ -144,14 +146,14 @@ Critérios por dimensão (texto resumido). Classificação indicativa: **[E]** e
 - 11.1 Prestação de Contas do ano anterior (Balanço Geral). **[E]**
 - 11.2 Relatório de Gestão/Atividades. **[O]**
 - 11.3 Decisão da apreciação/julgamento das contas. **[O]**
-- 11.4 Resultado do julgamento das contas do Chefe do Executivo. **[O]**
+- 11.4 Resultado do julgamento das contas da Mesa Diretora/Presidente da Câmara. **[O]**
 - 11.5 Relatório de Gestão Fiscal (RGF). **[E]**
 - 11.6 Relatório Resumido da Execução Orçamentária (RREO). **[E]**
 - 11.7 Plano estratégico institucional. **[R]**
 - 11.8 Lei do PPA e anexos. **[E]**
 - 11.9 Lei de Diretrizes Orçamentárias (LDO) e anexos. **[E]**
 - 11.10 Lei Orçamentária Anual (LOA) e anexos. **[E]**
-- 11.11–11.19 Demonstrações financeiras/contábeis, orçamento de investimentos, relatórios de auditoria etc. (vários **[O]/[R]**; itens de estatais não se aplicam a prefeitura).
+- 11.11–11.19 Demonstrações financeiras/contábeis, orçamento de investimentos, relatórios de auditoria etc. (vários **[O]/[R]**; itens de estatais não se aplicam a câmara).
 
 ### 12. SIC / e-SIC (peso 2)
 - 12.1 SIC indicado no site/portal com unidade responsável. **[O]**
@@ -196,7 +198,22 @@ Critérios por dimensão (texto resumido). Classificação indicativa: **[E]** e
 ### 19. Educação e Assistência Social (peso 1)
 - 19.1–19.4 Plano de educação e resultados, lista de espera em creches, conselhos de educação e de assistência social. **[O]/[R]**
 
-> **Tenant Câmara (Legislativo):** acrescenta a dimensão **Atividades Finalísticas (peso 3)** — composição da Casa, leis/atos, projetos, pautas, atas, votações nominais, transmissão de sessões, cotas parlamentares (20.1–20.11).
+### 20. Atividades Finalísticas — Legislativo (peso 3)
+
+Dimensão central da Câmara (produção legislativa e exercício do mandato):
+- 20.1 Composição da Casa: relação nominal dos vereadores e da Mesa Diretora. **[O]**
+- 20.2 Leis, decretos legislativos e resoluções aprovados (norma na íntegra). **[O]**
+- 20.3 Projetos de lei e demais proposições com situação de tramitação. **[O]**
+- 20.4 Pauta/ordem do dia das sessões plenárias e de comissões. **[O]**
+- 20.5 Atas das sessões plenárias e reuniões de comissões. **[O]**
+- 20.6 Resultado das votações, incluindo **votação nominal** por vereador. **[O]**
+- 20.7 Transmissão das sessões (TV Câmara / streaming) e acervo de gravações. **[O]**
+- 20.8 Verba indenizatória / cota parlamentar dos gabinetes (uso e prestação de contas). **[O]**
+- 20.9 Frequência/presença dos vereadores nas sessões. **[R]**
+- 20.10 Audiências públicas, eventos e atividades da Escola Legislativa. **[R]**
+- 20.11 Pareceres das comissões permanentes e temporárias. **[R]**
+
+> **Herança da plataforma de prefeitura (fork):** no produto de origem (Executivo) esta dimensão não existe; as dimensões setoriais (Saúde, Educação, Obras) é que pesavam. Na Câmara, a dimensão 20 (Atividades Finalísticas, peso 3) é o núcleo da nota — confirmar a numeração e os itens exatos na matriz oficial do Legislativo vigente.
 
 ## Caminho para o Diamante (mapa de desenvolvimento)
 
@@ -210,9 +227,10 @@ Para tirar a nota máxima, o portal precisa, por dimensão, entregar **conteúdo
 6. **Acessibilidade** (peso 1, fácil): símbolo, breadcrumb, alto contraste, redimensionar fonte, mapa do site, VLibras. → **frontend / tema-wcag**.
 7. **Ouvidoria + Carta de Serviços** (peso 1). → módulo **Ouvidoria**.
 8. **LGPD/Governo Digital** (peso 1): encarregado (DPO), Política de Privacidade, dados abertos, regulamentação 14.129. → privacidade + dados abertos + CMS.
-9. **Setoriais** (Saúde, Educação, Renúncia, Emendas — peso 1): datasets específicos no ETL.
+9. **Atividades Finalísticas do Legislativo** (peso 3): composição da Casa, leis/normas, projetos com tramitação, pautas, atas, **votações nominais**, TV Câmara/streaming, cotas parlamentares, audiências e Escola Legislativa. → módulo **Legislativo**. Dimensão de peso alto e exclusiva da Câmara — não pode ficar de fora do Diamante.
+10. **Setoriais** (Saúde, Educação, Renúncia, Emendas — peso 1): só pontuam quando a Câmara executa essas ações; caso contrário, "não aplicável" (rateado).
 
-Como o portal é **multi-tenant**, cada critério deve ser configurável por prefeitura (algumas têm/atualizam dados em ritmos diferentes), e o painel de conformidade PNTP deve medir o índice **por tenant**.
+Como o portal é **multi-tenant**, cada critério deve ser configurável por câmara (algumas têm/atualizam dados em ritmos diferentes), e o painel de conformidade PNTP deve medir o índice **por tenant**.
 
 ## Estado da implementação (2026-06-03)
 
@@ -222,4 +240,4 @@ O portal já é **capaz de Diamante** e mede o índice automaticamente:
 - **Motor de conformidade:** `api/src/modules/pntp/` (`criterios.ts` + `PntpService`) — `GET /api/pntp/conformidade` calcula índice ponderado (peso da dimensão × exigibilidade × itens de verificação), selo, e lista os **essenciais não atendidos (bloqueantes)** e o detalhe por dimensão. Uso administrativo (RBAC).
 - **Resultado medido (tenant de demonstração, dados completos): índice 100% → selo Diamante, 0 bloqueantes.** Antes do conteúdo institucional/LGPD: 83,75% (Prata). O painel aponta exatamente o que falta.
 
-O caminho de cada prefeitura ao Diamante é: carregar os dados reais (ETL contábil + documentos + páginas CMS institucionais) — o painel mede o progresso e o dossiê de evidências por critério.
+O caminho de cada câmara ao Diamante é: carregar os dados reais (ETL contábil + documentos + páginas CMS institucionais + produção legislativa: leis/projetos/atas/votações/sessões) — o painel mede o progresso e o dossiê de evidências por critério.

@@ -1,7 +1,7 @@
-# Manual do Sistema — Portal da Prefeitura
+# Manual do Sistema — Portal da Câmara Municipal
 
 > Versão: 2026-06-26
-> Público: servidores e gestores municipais que operam o painel administrativo.
+> Público: servidores e gestores da Câmara Municipal que operam o painel administrativo.
 > Este documento é também usado para treinar a IA assistente: cada seção é autocontida.
 
 ---
@@ -10,13 +10,13 @@
 
 ### O que é o portal
 
-O portal é uma plataforma SaaS multi-tenant que serve a prefeitura na internet. Por "multi-tenant" entende-se que o mesmo sistema atende vários municípios ao mesmo tempo, cada um com domínio, identidade visual e dados completamente isolados. O servidor acessa apenas os dados do próprio município.
+O portal é uma plataforma SaaS multi-tenant que serve a Câmara Municipal na internet. Por "multi-tenant" entende-se que o mesmo sistema atende várias câmaras ao mesmo tempo, cada uma com domínio, identidade visual e dados completamente isolados. O servidor acessa apenas os dados da própria câmara.
 
 O painel administrativo (endereço `/admin`) é a área restrita onde servidores e gestores gerenciam todo o conteúdo, atendimento e conformidade do portal público.
 
 ### Como fazer login
 
-1. Acesse `https://[dominio-da-prefeitura]/admin` no navegador.
+1. Acesse `https://[dominio-da-camara]/admin` no navegador.
 2. A tela de login aparece automaticamente para quem não está autenticado.
 3. Há dois métodos de autenticação disponíveis:
    - **Entrar com gov.br** — recomendado para servidores com conta gov.br (usa OIDC/PKCE, nenhuma senha é salva no portal).
@@ -30,8 +30,8 @@ Qualquer servidor pode criar uma conta com papel `cidadao` pelo portal público.
 
 1. Acesse o portal público e cadastre-se (ou entre com gov.br).
 2. No painel do cidadão (`/cidadao`), localize a opção **Solicitar acesso como servidor**.
-3. Preencha o formulário declarando nome, cargo e lotação (secretaria).
-4. A solicitação aparece para `admin_prefeitura`, `gestor` ou `super_admin` em **Solicitações de Acesso** no menu admin.
+3. Preencha o formulário declarando nome, cargo e lotação (comissão/setor).
+4. A solicitação aparece para `admin_prefeitura` (Administrador da Câmara), `gestor` ou `super_admin` em **Solicitações de Acesso** no menu admin.
 5. Após aprovação, seu papel é elevado e você passa a acessar o painel admin.
 
 ### Papéis e o que cada um pode fazer
@@ -39,9 +39,9 @@ Qualquer servidor pode criar uma conta com papel `cidadao` pelo portal público.
 | Papel | Nome exibido | O que pode fazer |
 |---|---|---|
 | `super_admin` | Super Admin | Tudo. Acessa qualquer tenant, configurações globais da plataforma. |
-| `admin_prefeitura` | Administrador | Tudo dentro do próprio município: usuários, tema, módulos, aprovação de acesso. |
+| `admin_prefeitura` | Administrador da Câmara | Tudo dentro da própria câmara: usuários, tema, módulos, aprovação de acesso. |
 | `ti` | TI | Configurações técnicas, assistente IA, integrações. |
-| `gestor` | Gestor | Conteúdo e módulos da secretaria. Pode aprovar solicitações de acesso. |
+| `gestor` | Gestor | Conteúdo e módulos da comissão/setor. Pode aprovar solicitações de acesso. |
 | `ouvidor` | Ouvidor | Apenas Ouvidoria, e-SIC e módulos associados (ADR-0005). |
 | `assistente_ouvidoria` | Assistente de Ouvidoria | Idem ouvidor, sem poder aprovar solicitações de acesso. |
 | `servidor` | Servidor | Módulos básicos de conteúdo. Não vê Ouvidoria/e-SIC. |
@@ -65,7 +65,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 ### Painel
 
-**O que é:** página inicial do painel admin com visão consolidada (BI) do município — KPIs operacionais, alertas, gráficos e atalhos rápidos.
+**O que é:** página inicial do painel admin com visão consolidada (BI) da câmara — KPIs operacionais, alertas, gráficos e atalhos rápidos.
 
 **Quem acessa:** todos os papéis com acesso ao painel admin.
 
@@ -75,7 +75,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 - KPIs principais: notícias publicadas no mês, comentários pendentes, manifestações abertas e vencidas, chamados abertos, atendimentos em aberto, respostas de formulários no mês, documentos publicados, usuários ativos, sessões online, solicitações LGPD pendentes, incidentes LGPD abertos, índice PNTP e selo atual.
 - Gráficos de tendência: entradas vs. resolvidas por mês (manifestações/chamados).
-- Distribuição de manifestações por status, chamados por categoria, manifestações por secretaria.
+- Distribuição de manifestações por status, chamados por categoria, manifestações por comissão/setor.
 - Fila de prazos iminentes: manifestações com prazo próximo do vencimento.
 - Últimas notícias publicadas e comentários recentes aguardando moderação.
 - Alertas ativos (nível crítico, alerta ou informativo) com link para a tela de resolução.
@@ -238,7 +238,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 **Dicas:**
 
-- Em anos eleitorais (anos pares), o sistema exibe um aviso sobre as vedações da Lei das Eleições (Lei 9.504/1997). Campanhas de cunho político-partidário ou que promovam realizações do governo nos 3 meses anteriores ao pleito podem ser ilegais. Consulte o jurídico do município. O sistema não garante conformidade eleitoral automaticamente.
+- Em anos eleitorais (anos pares), o sistema exibe um aviso sobre as vedações da Lei das Eleições (Lei 9.504/1997). Campanhas de cunho político-partidário ou que promovam realizações da câmara nos 3 meses anteriores ao pleito podem ser ilegais. Consulte a assessoria jurídica da câmara. O sistema não garante conformidade eleitoral automaticamente.
 - Quando duas campanhas ativas têm a mesma capacidade, prevalece a de maior prioridade.
 - Somente o `super_admin` pode semear (recarregar) a biblioteca global de presets.
 
@@ -304,33 +304,33 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 ---
 
-### Secretarias
+### Comissões e Setores
 
-**O que é:** gerencia as secretarias e órgãos municipais exibidos no portal. Cada secretaria pode ter página pública completa com descrição, equipe, notícias, galeria e documentos próprios.
+**O que é:** gerencia as comissões e setores da câmara exibidos no portal (comissões permanentes e temporárias, Mesa Diretora, setores administrativos). Cada comissão/setor pode ter página pública completa com descrição, equipe, notícias, galeria e documentos próprios.
 
-**Quem acessa:** `admin_prefeitura`, `super_admin` (gestores podem editar a própria secretaria).
+**Quem acessa:** `admin_prefeitura` (Administrador da Câmara), `super_admin` (gestores podem editar a própria comissão/setor).
 
-**Como chegar:** menu lateral > Conteúdo > **Secretarias**.
+**Como chegar:** menu lateral > Conteúdo > **Comissões e Setores**.
 
 **Passo a passo:**
 
-1. Clique em **Nova secretaria**.
-2. Preencha nome, sigla, tipo (secretaria, autarquia, fundação, etc.), descrição e endereço.
-3. Adicione o titular (secretário/diretor), telefone e e-mail de contato.
-4. Selecione logo ou imagem da secretaria.
+1. Clique em **Nova comissão/setor**.
+2. Preencha nome, sigla, tipo (comissão permanente, comissão temporária, Mesa Diretora, setor administrativo, etc.), descrição e endereço.
+3. Adicione o responsável (presidente da comissão/diretor de setor), telefone e e-mail de contato.
+4. Selecione logo ou imagem da comissão/setor.
 5. Marque **Ativa** e **Exibir no menu** conforme necessário.
 6. Salve.
 
 **Dicas:**
 
-- A página `/institucional/estrutura` é gerada automaticamente a partir das secretarias cadastradas.
-- Secretarias do tipo "gabinete" alimentam a seção de autoridades na estrutura organizacional.
+- A página `/institucional/estrutura` é gerada automaticamente a partir das comissões/setores cadastrados.
+- Itens do tipo "Mesa Diretora" alimentam a seção de autoridades na estrutura organizacional.
 
 ---
 
 ### Galeria
 
-**O que é:** módulo de galerias de fotos e vídeos do portal. As galerias podem ser associadas a uma secretaria ou ao portal geral.
+**O que é:** módulo de galerias de fotos e vídeos do portal. As galerias podem ser associadas a uma comissão/setor ou ao portal geral.
 
 **Quem acessa:** `servidor`, `gestor`, `admin_prefeitura`, `super_admin`.
 
@@ -339,7 +339,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 **Passo a passo:**
 
 1. Clique em **Nova galeria**.
-2. Preencha título, descrição e selecione a secretaria (opcional).
+2. Preencha título, descrição e selecione a comissão/setor (opcional).
 3. Adicione fotos pelo seletor de mídia ou insira links de vídeo (YouTube/MP4).
 4. Defina a ordem das mídias arrastando os itens na lista.
 5. Publique a galeria.
@@ -347,7 +347,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 **Dicas:**
 
 - Vídeos do YouTube são incorporados diretamente pelo link do YouTube.
-- A galeria compartilha as mesmas mídias com o portal principal e com as páginas das secretarias.
+- A galeria compartilha as mesmas mídias com o portal principal e com as páginas das comissões/setores.
 
 ---
 
@@ -391,7 +391,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 **Passo a passo:**
 
 1. Clique em **Nova página** ou use um **template** pré-existente.
-2. Defina o slug (URL da página, ex.: `/sobre-a-cidade`), título e metadados SEO.
+2. Defina o slug (URL da página, ex.: `/sobre-a-camara`), título e metadados SEO.
 3. Adicione blocos arrastando-os para a área de edição. Tipos disponíveis: texto rico, imagem, galeria, vídeo, chamada para ação, cards, destaque, HTML livre, entre outros.
 4. Configure cada bloco (texto, cores, links, imagens).
 5. Use **Versões** para criar um backup antes de grandes alterações.
@@ -407,7 +407,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 ### Diário Oficial
 
-**O que é:** publicação eletrônica do Diário Oficial do Município com matérias estruturadas, busca full-text em português e arquivo histórico.
+**O que é:** publicação eletrônica do Diário Oficial da Câmara com matérias estruturadas, busca full-text em português e arquivo histórico.
 
 **Quem acessa:** `admin_prefeitura`, `super_admin`.
 
@@ -418,7 +418,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 1. Clique em **Nova edição**.
 2. Preencha número, data da edição e título.
 3. Adicione matérias (cada matéria tem tipo, número e conteúdo):
-   - Tipos disponíveis: Lei, Decreto, Portaria, Resolução, Edital, Licitação, Extrato de Contrato/Convênio, Ato de Pessoal, Aviso/Comunicado, Outro.
+   - Tipos disponíveis: Lei, Decreto Legislativo, Resolução, Portaria, Ato da Mesa, Edital, Licitação, Extrato de Contrato/Convênio, Ato de Pessoal, Aviso/Comunicado, Outro.
 4. Salve como rascunho para revisão.
 5. Quando pronto, clique em **Publicar**.
 
@@ -432,7 +432,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 ### Serviços
 
-**O que é:** gerencia a Carta de Serviços ao Cidadão — catálogo dos serviços prestados pela prefeitura com informações detalhadas para o cidadão.
+**O que é:** gerencia a Carta de Serviços ao Cidadão — catálogo dos serviços prestados pela câmara com informações detalhadas para o cidadão (ex.: emissão de protocolo, acesso a leis e normas, agendamento de uso do plenário, atendimento da Escola Legislativa).
 
 **Quem acessa:** `servidor`, `gestor`, `admin_prefeitura`, `super_admin`.
 
@@ -442,7 +442,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 1. Clique em **Novo serviço**.
 2. Preencha nome do serviço, descrição, o que é necessário (documentos), como solicitar, onde solicitar, prazo de atendimento, custo (gratuito ou valor), horário e canal (presencial, online, telefone).
-3. Selecione a secretaria responsável.
+3. Selecione a comissão/setor responsável.
 4. Marque **Destaque** para exibir na seção de serviços em destaque na home.
 5. Publique.
 
@@ -489,7 +489,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 2. Selecione o **tipo** (Lei, Decreto, Portaria, etc.) e a **natureza** (conforme taxonomia TCE-MT).
 3. Preencha número, ano, ementa e data.
 4. Faça upload do arquivo PDF ou informe URL externa.
-5. Associe à secretaria, se aplicável.
+5. Associe à comissão/setor, se aplicável.
 6. Publique.
 
 **Dicas:**
@@ -524,7 +524,7 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 ### Contratos
 
-**O que é:** gerencia contratos administrativos firmados pela prefeitura.
+**O que é:** gerencia contratos administrativos firmados pela câmara.
 
 **Quem acessa:** `servidor`, `gestor`, `admin_prefeitura`, `super_admin`.
 
@@ -715,10 +715,10 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 5. Use **Nota interna** (checkbox acima do campo de texto) para escrever observações visíveis apenas para a equipe — não enviadas ao cidadão.
 6. Use **Tags** para categorizar a conversa.
 7. Use **Atribuir** para passar a conversa para outro agente.
-8. Use **Transferir** para mover para outra secretaria.
+8. Use **Transferir** para mover para outra comissão/setor.
 9. Ao terminar, clique em **Encerrar** (com mensagem opcional de despedida).
 
-**Filtros disponíveis:** status, canal (widget ou WhatsApp), secretaria e tags.
+**Filtros disponíveis:** status, canal (widget ou WhatsApp), comissão/setor e tags.
 
 **Transcrição:** clique em **.txt** para baixar a transcrição completa da conversa.
 
@@ -764,11 +764,11 @@ Os grupos do menu lateral, na ordem em que aparecem, são: **Geral**, **Página 
 
 **Gerenciar canais adicionais (multi-número / multi-plataforma):**
 
-A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tipos suportados: WhatsApp, Instagram, Facebook Messenger e Telegram. Cada canal pode ser vinculado a uma secretaria para roteamento automático.
+A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tipos suportados: WhatsApp, Instagram, Facebook Messenger e Telegram. Cada canal pode ser vinculado a uma comissão/setor para roteamento automático.
 
 1. Clique em **+ Novo canal**.
 2. Selecione o tipo (WhatsApp, Instagram, Messenger ou Telegram) e preencha as credenciais.
-3. Vincule a uma secretaria (opcional) para roteamento de atendimentos.
+3. Vincule a uma comissão/setor (opcional) para roteamento de atendimentos.
 4. Salve e clique em **Webhook** para ver e copiar a URL de callback do canal.
 5. Para Telegram, use o botão **Configurar webhook automaticamente** — o sistema chama a Bot API do Telegram por você.
 
@@ -904,7 +904,7 @@ A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tip
 
 ### Painéis de TV
 
-**O que é:** gera links de acesso sem login para exibir painéis operacionais em TVs no ambiente de trabalho (sala da ouvidoria, gabinete do prefeito).
+**O que é:** gera links de acesso sem login para exibir painéis operacionais em TVs no ambiente de trabalho (sala da ouvidoria, gabinete da Presidência da Câmara).
 
 **Quem acessa:** `admin_prefeitura`, `super_admin`.
 
@@ -913,7 +913,7 @@ A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tip
 **Painéis disponíveis:**
 
 - **Painel da Ouvidoria:** operacional — manifestações abertas, SLA, prazos vencendo, denúncias do app e satisfação. Para a TV da sala da ouvidoria.
-- **Painel do Prefeito:** executivo — visão consolidada da cidade, índice de resolução, satisfação, tendência e demandas por secretaria. Para a TV do gabinete.
+- **Painel da Presidência:** institucional — visão consolidada da câmara, índice de resolução, satisfação, tendência e demandas por comissão/setor. Para a TV do gabinete da Mesa Diretora.
 
 **Passo a passo:**
 
@@ -945,10 +945,10 @@ A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tip
 
 1. Clique em **+ Novo item**.
 2. Preencha:
-   - **Pergunta:** como o cidadão vai perguntar (ex.: "Qual o telefone da Prefeitura?").
+   - **Pergunta:** como o cidadão vai perguntar (ex.: "Qual o telefone da Câmara?").
    - **Resposta:** resposta oficial e completa.
    - **Tags:** palavras-chave para organização (ex.: "contato", "telefone").
-   - **Fixado:** marque para itens que o bot deve considerar SEMPRE, independentemente da pergunta (ex.: nome e endereço da prefeitura, horário de funcionamento geral).
+   - **Fixado:** marque para itens que o bot deve considerar SEMPRE, independentemente da pergunta (ex.: nome e endereço da câmara, horário de funcionamento geral, dia e hora das sessões plenárias).
    - **Ativo:** desmarque para desativar temporariamente sem excluir.
 3. Clique em **Adicionar**.
 
@@ -960,7 +960,7 @@ A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tip
 
 **Dicas:**
 
-- Itens **Fixados** são sempre considerados pelo bot, mesmo sem correspondência direta na pergunta do cidadão — use para fatos essenciais da entidade.
+- Itens **Fixados** são sempre considerados pelo bot, mesmo sem correspondência direta na pergunta do cidadão — use para fatos essenciais da câmara.
 - Itens inativos são completamente ignorados pelo bot.
 - Após adicionar ou editar muitos itens, execute a reindexação para atualizar a busca semântica.
 
@@ -977,10 +977,10 @@ A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tip
 1. Clique em **+ Novo artigo**.
 2. Preencha:
    - **Título:** nome identificador do conteúdo.
-   - **Categoria:** Educação, Saúde, Eventos, Regimentos, Normas, etc. (ou texto livre).
-   - **Conteúdo:** texto completo, aceita Markdown. Cole aqui regulamentos, horários de postos de saúde, calendários escolares, perguntas frequentes por área, regimentos internos, etc.
+   - **Categoria:** Sessões, Legislativo, Eventos, Regimento Interno, Normas, Escola Legislativa, etc. (ou texto livre).
+   - **Conteúdo:** texto completo, aceita Markdown. Cole aqui o Regimento Interno, calendário de sessões plenárias, pauta e atas, perguntas frequentes por tema, normas e resoluções, cursos da Escola Legislativa, etc.
    - **Tags:** palavras-chave para filtros.
-   - **Secretaria:** vínculo opcional com uma secretaria (gestores com escopo restrito só editam a própria secretaria).
+   - **Comissão/Setor:** vínculo opcional com uma comissão/setor (gestores com escopo restrito só editam a própria comissão/setor).
    - **Vigência:** datas de início e fim (para conteúdo temporário como eventos ou normas sazonais).
    - **Público:** quando marcado, o assistente pode usar este conteúdo para responder cidadãos no chat do portal.
    - **Ativo:** desative para retirar do assistente sem excluir.
@@ -990,7 +990,7 @@ A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tip
 
 - Conteúdo inativo é completamente ignorado pelo assistente.
 - Use **Vigência** para conteúdo temporário (eventos, avisos): o sistema pode desativar automaticamente após a data fim.
-- Gestores com papel `gestor` ou `servidor` podem ter escopo restrito à própria secretaria — o campo de secretaria fica bloqueado para edição.
+- Gestores com papel `gestor` ou `servidor` podem ter escopo restrito à própria comissão/setor — o campo de comissão/setor fica bloqueado para edição.
 
 ---
 
@@ -1019,7 +1019,7 @@ A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tip
 
 ### Documentação LGPD
 
-**O que é:** gera, edita, publica e permite baixar os documentos de conformidade LGPD da entidade (Política de Privacidade, Aviso de Cookies, etc.) a partir de template global da plataforma, preenchido com os dados do município.
+**O que é:** gera, edita, publica e permite baixar os documentos de conformidade LGPD da entidade (Política de Privacidade, Aviso de Cookies, etc.) a partir de template global da plataforma, preenchido com os dados da câmara.
 
 **Quem acessa:** `admin_prefeitura`, `super_admin`.
 
@@ -1035,7 +1035,7 @@ A seção "Canais" permite cadastrar canais adicionais com webhook próprio. Tip
 **Dicas:**
 
 - A documentação deve ser atualizada sempre que houver mudança nas finalidades de tratamento de dados ou nos dados do DPO.
-- A Lidera Tecnologia atua como Operadora e a prefeitura como Controladora — essa distinção está refletida nos documentos gerados.
+- A Lidera Tecnologia atua como Operadora e a câmara como Controladora — essa distinção está refletida nos documentos gerados.
 
 ---
 
@@ -1126,7 +1126,7 @@ Para solicitações do tipo "Eliminação/Exclusão", é exibido um bloco de ano
 **Passo a passo para criar um usuário:**
 
 1. Clique em **Novo usuário**.
-2. Preencha nome, e-mail e papel (servidor, gestor, ouvidor, administrador).
+2. Preencha nome, e-mail e papel (servidor, gestor, ouvidor, Administrador da Câmara).
 3. Salve. O usuário recebe um e-mail para definir a senha.
 
 **Passo a passo para editar papel ou desativar:**
@@ -1243,7 +1243,7 @@ Para solicitações do tipo "Eliminação/Exclusão", é exibido um bloco de ano
 
 **Dicas:**
 
-- Se não configurado, o portal usa o SMTP global da plataforma (Lidera) como fallback, mas recomenda-se configurar o SMTP próprio da prefeitura para que os e-mails saiam com o domínio oficial.
+- Se não configurado, o portal usa o SMTP global da plataforma (Lidera) como fallback, mas recomenda-se configurar o SMTP próprio da câmara para que os e-mails saiam com o domínio oficial.
 - Erros de SMTP ficam registrados no audit_log.
 
 ---
@@ -1283,7 +1283,7 @@ Para solicitações do tipo "Eliminação/Exclusão", é exibido um bloco de ano
 
 ### Menus
 
-**O que é:** gerencia os menus de navegação do portal público (menu principal, menu do rodapé, menus de secretarias, etc.).
+**O que é:** gerencia os menus de navegação do portal público (menu principal, menu do rodapé, menus de comissões/setores, etc.).
 
 **Quem acessa:** `admin_prefeitura`, `super_admin`.
 
@@ -1388,7 +1388,7 @@ O manual está disponível publicamente também em `/admin/manual` (sem necessid
 
 | Termo | Significado |
 |---|---|
-| Tenant | Cada prefeitura/cliente é um "tenant" isolado no sistema. |
+| Tenant | Cada câmara/cliente é um "tenant" isolado no sistema. |
 | RLS | Row Level Security — mecanismo que garante que cada tenant só acessa seus próprios dados. |
 | PNTP | Programa Nacional de Transparência Pública — avalia conformidade do portal em transparência ativa. |
 | LGPD | Lei Geral de Proteção de Dados (Lei 13.709/2018). |

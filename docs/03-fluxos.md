@@ -86,7 +86,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    Cont[Sistema Contábil da Prefeitura] -->|conector por fornecedor| N8N[n8n]
+    Cont[Sistema Contábil da Câmara] -->|conector por fornecedor| N8N[n8n]
     N8N -->|normaliza| Q[Fila integracoes]
     Q --> W[Worker sync]
     W --> DB[(transp_* + RLS)]

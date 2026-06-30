@@ -10,14 +10,14 @@
 
 ## Apresentação e escopo deste documento
 
-Este RIPD cobre dois tratamentos de dados pessoais identificados como de **alto risco** na plataforma SaaS multi-tenant Portal de Prefeitura, nos termos do art. 5º, XVII da LGPD e da orientação da ANPD sobre operações que envolvem tratamento em larga escala, dados de localização e publicação individualizada de dados financeiros de servidores.
+Este RIPD cobre dois tratamentos de dados pessoais identificados como de **alto risco** na plataforma SaaS multi-tenant Portal da Câmara, nos termos do art. 5º, XVII da LGPD e da orientação da ANPD sobre operações que envolvem tratamento em larga escala, dados de localização e publicação individualizada de dados financeiros de agentes públicos (vereadores e servidores).
 
 Os dois tratamentos analisados são:
 
 1. **Publicação da Folha de Pagamento** — módulo Transparência (`/api/transparencia/folha`).
-2. **Denúncias Georreferenciadas do App do Cidadão** — módulo Chamados (tabelas `chamados`, `chamado_fotos`, `chamado_atualizacoes`).
+2. **Solicitações Georreferenciadas do App do Cidadão** — módulo Chamados (tabelas `chamados`, `chamado_fotos`, `chamado_atualizacoes`).
 
-Para cada tratamento, este documento segue a estrutura do modelo ANPD: identificação, necessidade/proporcionalidade, natureza/escopo/contexto/finalidade, dados e titulares, ciclo de vida, avaliação de riscos, medidas de mitigação e conclusão. Ao final, há um checklist técnico direcionado ao desenvolvedor do módulo Chamados.
+Para cada tratamento, este documento segue a estrutura do modelo ANPD: identificação, necessidade/proporcionalidade, natureza/escopo/contexto/finalidade, dados e titulares, ciclo de vida, avaliação de riscos, medidas de mitigação e conclusão. Ao final, há um checklist técnico direcionado ao desenvolvedor do módulo Chamados (protocolos/solicitações do cidadão à Câmara).
 
 ---
 
@@ -27,16 +27,16 @@ Para cada tratamento, este documento segue a estrutura do modelo ANPD: identific
 
 | Campo | Valor |
 |-------|-------|
-| Nome do tratamento | Publicação individualizada da folha de pagamento de servidores públicos municipais |
+| Nome do tratamento | Publicação individualizada da folha de pagamento de vereadores e servidores da Câmara Municipal |
 | Módulo | Transparência (`transp_folha`) |
 | Endpoint principal | `GET /api/transparencia/folha` (sem autenticação; acesso público) |
 | Data de início | A definir por tenant (go-live do módulo Transparência) |
-| Controlador | A Prefeitura Municipal contratante (tenant). Cada prefeitura é controladora independente dos dados de seus servidores. |
+| Controlador | A Câmara Municipal contratante (tenant). Cada câmara é controladora independente dos dados de seus vereadores e servidores. |
 | Operador | Empresa operadora da plataforma SaaS (quem desenvolve e hospeda o sistema). |
-| Encarregado (DPO) | A ser nomeado por cada prefeitura nos termos do art. 41 da LGPD. A plataforma oferece suporte ao DPO do tenant. |
+| Encarregado (DPO) | A ser nomeado por cada câmara nos termos do art. 41 da LGPD. A plataforma oferece suporte ao DPO do tenant. |
 | Subprocessadores | Provedor de infraestrutura (Docker/Kubernetes no servidor Lidera); CDN/Cloudflare (em trânsito). Não há repasse de dados de folha a terceiros. |
 
-**Papel dos atores:** A arquitetura SaaS multi-tenant implica que a prefeitura (controladora) define a finalidade e os meios essenciais do tratamento (publicar a folha por obrigação legal). A plataforma (operadora) executa o tratamento em nome da controladora, com obrigações contratuais de conformidade (DPA — Data Processing Agreement) a ser celebrado entre as partes por exigência do art. 39 da LGPD.
+**Papel dos atores:** A arquitetura SaaS multi-tenant implica que a câmara (controladora) define a finalidade e os meios essenciais do tratamento (publicar a folha por obrigação legal). A plataforma (operadora) executa o tratamento em nome da controladora, com obrigações contratuais de conformidade (DPA — Data Processing Agreement) a ser celebrado entre as partes por exigência do art. 39 da LGPD.
 
 ---
 
@@ -44,7 +44,7 @@ Para cada tratamento, este documento segue a estrutura do modelo ANPD: identific
 
 **Necessidade:** A publicação da folha de pagamento é **obrigação legal expressa** imposta pela Lei Complementar 131/2009 (art. 2º, alínea "b") e pela Lei de Responsabilidade Fiscal (LC 101/2000), que exigem a publicização das despesas com pessoal em sítio eletrônico de acesso público. O tratamento não é facultativo para o controlador público.
 
-**Proporcionalidade:** O Supremo Tribunal Federal, no ARE 652.777 (Tema 484, rel. Min. Teori Zavascki, 2015), fixou a constitucionalidade da publicação do nome, vínculo e remuneração de servidores públicos, reconhecendo a prevalência do princípio da publicidade (CF art. 37) sobre a privacidade individual no contexto do erário. A LGPD, em seus arts. 23 a 26, não revoga este dever — ao contrário, reconhece que o tratamento pelo Poder Público se sujeita à legislação específica (art. 23, §1º), que no caso da folha é a LC 131/2009.
+**Proporcionalidade:** O Supremo Tribunal Federal, no ARE 652.777 (Tema 484, rel. Min. Teori Zavascki, 2015), fixou a constitucionalidade da publicação do nome, vínculo e remuneração de agentes públicos — incluindo os subsídios de vereadores e a remuneração dos servidores do Legislativo —, reconhecendo a prevalência do princípio da publicidade (CF art. 37) sobre a privacidade individual no contexto do erário. A LGPD, em seus arts. 23 a 26, não revoga este dever — ao contrário, reconhece que o tratamento pelo Poder Público se sujeita à legislação específica (art. 23, §1º), que no caso da folha é a LC 131/2009.
 
 **Campos minimizados:** A decisão de minimização está documentada em `docs/06-lgpd-gdpr.md`. CPF não é publicado (sem amparo na LC 131); matrícula é mascarada (4 últimos dígitos); campos técnicos internos (`id`, `tenant_id`, `fonte_origem`, `atualizado_em`) não são expostos. Apenas os dados cujo fundamento de publicação é expresso em lei ou jurisprudência do STF são retornados pela API pública.
 
@@ -52,17 +52,17 @@ Para cada tratamento, este documento segue a estrutura do modelo ANPD: identific
 
 ### 3. Natureza, Escopo, Contexto e Finalidades
 
-**Finalidade:** Transparência ativa das despesas de pessoal do Poder Público municipal; controle social sobre o erário; cumprimento de obrigação imposta pela LC 131/2009.
+**Finalidade:** Transparência ativa das despesas de pessoal do Poder Legislativo municipal; controle social sobre o erário; cumprimento de obrigação imposta pela LC 131/2009.
 
-**Natureza do dado:** Dados pessoais de categoria comum (nome, cargo, vínculo, órgão, valores de remuneração). Não há dados de categorias especiais (art. 11 da LGPD) na publicação — descontos não identificam condições de saúde ou sindicato de forma diretamente atribuível na estrutura atual.
+**Natureza do dado:** Dados pessoais de categoria comum (nome, cargo/mandato, vínculo, órgão, valores de remuneração/subsídio). Não há dados de categorias especiais (art. 11 da LGPD) na publicação — descontos não identificam condições de saúde ou sindicato de forma diretamente atribuível na estrutura atual.
 
-**Escopo:** Todos os servidores ativos do município controlador, em cada competência mensal publicada. O escopo temporal abrange o histórico disponível para consulta (dado de acervo público contínuo).
+**Escopo:** Todos os vereadores e servidores ativos da Câmara controladora, em cada competência mensal publicada. O escopo temporal abrange o histórico disponível para consulta (dado de acervo público contínuo).
 
 **Contexto:** Dados provenientes do sistema contábil do tenant, ingeridos via ETL (n8n) e normalizados na tabela `transp_folha`. A publicação é passiva (o cidadão consulta) e não envolve profilagem ou decisão automatizada sobre os titulares.
 
 **Base legal LGPD:** Art. 7º, II (cumprimento de obrigação legal ou regulatória) e art. 23 (tratamento pelo Poder Público). Finalidade declarada e prevista em lei.
 
-**Base legal GDPR (para servidores titulares na UE, improvável mas coberto):** Art. 6.1(c) — cumprimento de obrigação legal.
+**Base legal GDPR (para vereadores/servidores titulares na UE, improvável mas coberto):** Art. 6.1(c) — cumprimento de obrigação legal.
 
 ---
 
@@ -83,9 +83,9 @@ Para cada tratamento, este documento segue a estrutura do modelo ANPD: identific
 | CPF | Dado pessoal sensível à fraude | Não | Sem amparo na LC 131; violaria minimização (LGPD art. 6º, III) |
 | `id`, `tenant_id`, metadados internos | Técnico | Não | Sem interesse público; risco de exposição de arquitetura |
 
-**Categorias de titulares:** Servidores públicos municipais (efetivos, comissionados, temporários, estatutários e celetistas) do tenant. Não há titulares menores de idade ou em situação de vulnerabilidade especial na categoria padrão, ressalvados casos específicos (ver item de risco R-04 abaixo).
+**Categorias de titulares:** Vereadores (mandato eletivo) e servidores da Câmara (efetivos, comissionados, temporários, estatutários e celetistas) do tenant. Não há titulares menores de idade ou em situação de vulnerabilidade especial na categoria padrão, ressalvados casos específicos (ver item de risco R-04 abaixo).
 
-**Volume estimado:** Variável por tenant (de centenas a dezenas de milhares de servidores por competência).
+**Volume estimado:** Variável por tenant (de dezenas a centenas de vereadores e servidores por competência).
 
 ---
 
@@ -95,9 +95,9 @@ Para cada tratamento, este documento segue a estrutura do modelo ANPD: identific
 |------|-----------|
 | **Coleta** | ETL via n8n a partir do sistema contábil do tenant. Frequência: mensal por competência. Idempotência por chave natural (exercício + mês + matrícula). |
 | **Armazenamento** | Tabela `transp_folha` no PostgreSQL, isolada por `tenant_id` e protegida por RLS. Dados em repouso cifrados pelo storage do sistema operacional (volume criptografado). |
-| **Processamento interno** | Consulta interna (RBAC: `gestor`, `admin_prefeitura`) acessa matrícula completa para fins de gestão. Consulta pública recebe projeção minimizada (mascaramento na camada de serviço). |
+| **Processamento interno** | Consulta interna (RBAC: `gestor`, `admin_prefeitura` — Administrador da Câmara) acessa matrícula completa para fins de gestão. Consulta pública recebe projeção minimizada (mascaramento na camada de serviço). |
 | **Publicação** | `GET /api/transparencia/folha` retorna apenas os campos aprovados; o mascaramento de matrícula e a projeção de campos ocorrem na camada de serviço (`TransparenciaService`), nunca no frontend. |
-| **Retenção** | Permanente enquanto dado de acervo público (obrigação contínua de transparência). A LC 131 não estabelece prazo de eliminação — o dado é parte do registro histórico das finanças públicas municipais. |
+| **Retenção** | Permanente enquanto dado de acervo público (obrigação contínua de transparência). A LC 131 não estabelece prazo de eliminação — o dado é parte do registro histórico das finanças públicas da Câmara Municipal. |
 | **Eliminação/Anonimização** | Não há eliminação prevista por finalidade legal. Casos excepcionais (decisão judicial de supressão de nome) são tratados pelo campo `nome_suprimido boolean` (ver item de risco R-03), que substitui o nome por "NOME SUPRIMIDO — MEDIDA PROTETIVA" sem alterar os valores financeiros. |
 | **Exportação** | CSV e JSON disponíveis para download (dados abertos); os mesmos campos minimizados da API aplicam-se às exportações. |
 
@@ -110,11 +110,11 @@ A probabilidade e o impacto são graduados em: **Baixa (B)**, **Média (M)** e *
 | ID | Risco ao Titular | Probabilidade | Impacto | Nível |
 |----|-----------------|--------------|---------|-------|
 | R-01 | Uso indevido da remuneração publicada para fins de discriminação, assédio ou constrangimento pessoal | M | A | **Alto** |
-| R-02 | Cruzamento de dados com outras fontes (redes sociais, cartório, Receita) para perfilamento do servidor | A | M | **Alto** |
-| R-03 | Exposição do nome de servidor em situação de proteção especial (vítima de violência doméstica, proteção de testemunha, perseguição) | B | A | **Médio** |
+| R-02 | Cruzamento de dados com outras fontes (redes sociais, cartório, Receita) para perfilamento do vereador/servidor | A | M | **Alto** |
+| R-03 | Exposição do nome de vereador/servidor em situação de proteção especial (vítima de violência doméstica, proteção de testemunha, perseguição) | B | A | **Médio** |
 | R-04 | Vazamento do banco interno com matrícula completa, CPF e dados não mascarados (ex.: dump por acesso privilegiado indevido) | B | A | **Médio** |
 | R-05 | Raspagem (scraping) automatizada dos dados publicados para fins comerciais ou de perfilamento em massa | A | M | **Alto** |
-| R-06 | Associação equivocada de servidor homônimo com outra pessoa | M | M | **Médio** |
+| R-06 | Associação equivocada de vereador/servidor homônimo com outra pessoa | M | M | **Médio** |
 | R-07 | Exposição de dado de desconto identificando condição específica (ex.: desconto de plano de saúde revela crença/condição) | B | M | **Baixo** |
 
 ---
@@ -131,7 +131,7 @@ A probabilidade e o impacto são graduados em: **Baixa (B)**, **Média (M)** e *
 | Criptografia em trânsito | HTTPS obrigatório (Cloudflare + Nginx); dado nunca trafega em claro | Implementado (infra) |
 | Criptografia em repouso | Volume de storage criptografado no servidor | Recomendado (implementar na infra) |
 | `audit_log` para acesso interno | Ações de gestor/admin que consultam matrícula completa registradas | A implementar no serviço |
-| RBAC no acesso interno | Matrícula completa acessível apenas a roles internas (`gestor`, `admin_prefeitura`) | A implementar |
+| RBAC no acesso interno | Matrícula completa acessível apenas a roles internas (`gestor`, `admin_prefeitura` — Administrador da Câmara) | A implementar |
 
 #### Medidas adicionais recomendadas (a implementar)
 
@@ -142,7 +142,7 @@ A probabilidade e o impacto são graduados em: **Baixa (B)**, **Média (M)** e *
 | **CAPTCHA/desafio** opcional em exportações volumosas (CSV/JSON completo) | R-05 | Média |
 | **Aviso de privacidade** embutido na página de transparência, informando finalidade e base legal ao cidadão-consulente | Transparência (LGPD art. 9º) | Alta |
 | **Processo formal** (operacional) para o DPO do tenant receber e processar pedido de supressão de nome por medida judicial | R-03 | Alta |
-| **DPA (Data Processing Agreement)** entre a plataforma SaaS e cada prefeitura, formalizando papéis controlador/operador (art. 39 LGPD) | Conformidade geral | Alta |
+| **DPA (Data Processing Agreement)** entre a plataforma SaaS e cada câmara, formalizando papéis controlador/operador (art. 39 LGPD) | Conformidade geral | Alta |
 | **Log de acesso a dado pessoal** para consultas internas à `transp_folha` com dados completos | R-04 | Média |
 
 ---
@@ -159,55 +159,57 @@ O tratamento é legítimo, proporcionado e amparado em obrigação legal. A libe
 1. Campo `nome_suprimido` e processo operacional de supressão (risco R-03).
 2. Rate limiting no endpoint público (risco R-05).
 3. Aviso de privacidade na página de transparência (LGPD art. 9º).
-4. Celebração do DPA entre plataforma e prefeituras (LGPD art. 39).
+4. Celebração do DPA entre plataforma e câmaras (LGPD art. 39).
 
 ---
 
-## Parte II — Denúncias Georreferenciadas (App do Cidadão — Módulo Chamados)
+## Parte II — Solicitações Georreferenciadas (App do Cidadão — Módulo Chamados)
+
+> **Nota de origem (fork):** o módulo Chamados foi herdado da plataforma de prefeitura, onde registrava demandas urbanas (zeladoria). Na Câmara, ele é reaproveitado para **protocolos e solicitações do cidadão ao Legislativo** — pedidos de providência a vereadores, inscrições em audiências públicas/sessões, indicação de demandas de bairro a serem levadas ao Plenário. A estrutura técnica (geolocalização opcional, foto, protocolo) é a mesma; muda a finalidade e os exemplos.
 
 ### 1. Identificação do Tratamento
 
 | Campo | Valor |
 |-------|-------|
-| Nome do tratamento | Registro, processamento e gestão de chamados urbanos com dados de geolocalização e imagem fotográfica |
+| Nome do tratamento | Registro, processamento e gestão de solicitações do cidadão à Câmara, com dados de geolocalização opcional e imagem fotográfica |
 | Módulo | App do Cidadão / Chamados |
 | Tabelas | `chamados`, `chamado_fotos`, `chamado_atualizacoes` (`db/005_app_cidadao_postgis.sql`) |
 | Endpoints | `POST /api/chamados`, `GET /api/chamados/proximos`, `GET /api/chamados/:protocolo`, `POST /api/chamados/:id/atualizacoes` |
 | Data de início | A definir (módulo em implementação) |
-| Controlador | Prefeitura Municipal contratante (tenant). |
+| Controlador | Câmara Municipal contratante (tenant). |
 | Operador | Empresa operadora da plataforma SaaS. |
-| Encarregado (DPO) | A nomear por cada prefeitura (art. 41 LGPD). |
+| Encarregado (DPO) | A nomear por cada câmara (art. 41 LGPD). |
 | Subprocessadores | Provedor de object storage (MinIO); serviço de push (Expo Notifications); API Anthropic (triagem opcional por IA — ver Parte II, item 7); CDN/Cloudflare. |
 
-**Papel dos atores:** Idem ao Tratamento I — prefeitura como controladora, plataforma como operadora. A geolocalização e as fotos são coletadas diretamente do cidadão-titular pelo app móvel (Expo) e transmitidas exclusivamente à API do backend, que as processa e armazena. O app nunca acessa o banco ou o storage diretamente (CLAUDE.md, Regra 2b).
+**Papel dos atores:** Idem ao Tratamento I — câmara como controladora, plataforma como operadora. A geolocalização e as fotos são coletadas diretamente do cidadão-titular pelo app móvel (Expo) e transmitidas exclusivamente à API do backend, que as processa e armazena. O app nunca acessa o banco ou o storage diretamente (CLAUDE.md, Regra 2b).
 
 ---
 
 ### 2. Necessidade e Proporcionalidade
 
-**Necessidade:** O serviço de chamados urbanos é uma política pública de gestão do território municipal. A geolocalização é necessária para que a equipe de campo encontre e resolva o problema reportado. A foto é necessária para comprovação da ocorrência e priorização pelo gestor. Sem esses dados, o serviço perde sua utilidade prática.
+**Necessidade:** O serviço de solicitações ao Legislativo é uma forma de participação do cidadão e de encaminhamento de demandas aos vereadores. A geolocalização (opcional) ajuda a contextualizar a demanda de bairro a ser levada ao Plenário ou encaminhada como indicação. A foto pode comprovar a ocorrência e auxiliar a priorização pelo gabinete/comissão. Sem esses dados, parte da utilidade prática se perde, mas a identificação do local nunca é obrigatória.
 
-**Proporcionalidade:** Deve-se usar **o mínimo necessário**: ponto geográfico preciso (latitude/longitude) no momento do chamado, não rastreamento contínuo; foto do problema, não da identidade do denunciante. A identificação do cidadão deve ser opcional conforme política do tenant.
+**Proporcionalidade:** Deve-se usar **o mínimo necessário**: ponto geográfico (latitude/longitude) apenas quando o cidadão optar por anexá-lo, não rastreamento contínuo; foto da demanda, não da identidade do solicitante. A identificação do cidadão deve ser opcional conforme política do tenant.
 
-**Anonimato como regra:** O CLAUDE.md (Regra 5) e o `docs/06-lgpd-gdpr.md` estabelecem que denúncias podem ser anônimas. Nenhum mecanismo deve impedir a abertura de chamado sem identificação prévia. Quando o cidadão não está logado, o campo `cidadao_id` permanece nulo.
+**Anonimato como regra:** O CLAUDE.md (Regra 5) e o `docs/06-lgpd-gdpr.md` estabelecem que manifestações/solicitações podem ser anônimas. Nenhum mecanismo deve impedir a abertura de solicitação sem identificação prévia. Quando o cidadão não está logado, o campo `cidadao_id` permanece nulo.
 
 ---
 
 ### 3. Natureza, Escopo, Contexto e Finalidades
 
-**Finalidade:** Gestão de ocorrências urbanas (buracos, terrenos/animais abandonados, iluminação pública, coleta de lixo, arborização, sinalização) pelo Poder Público municipal; atendimento à demanda do cidadão; controle e priorização de serviços públicos.
+**Finalidade:** Recebimento e encaminhamento de solicitações do cidadão ao Legislativo (pedidos de providência a vereadores, sugestões de demanda de bairro, indicações, inscrições em audiências/sessões) pelo Poder Público municipal; atendimento à demanda do cidadão; controle e priorização do encaminhamento parlamentar.
 
 **Natureza dos dados:**
 - **Geolocalização (latitude/longitude):** dado pessoal quando vinculado a um usuário identificado ou identificável. Revela padrões de deslocamento, endereço de residência/trabalho, rotina. A ANPD e o GDPR (Recital 51) reconhecem dados de localização como de risco elevado.
-- **Fotografia:** dado pessoal (imagem do denunciante) quando o rosto do cidadão aparece; pode conter inadvertidamente imagens de terceiros, placas de veículos (dados de mobilidade), fachadas de residências.
-- **Identificação via gov.br:** nome, CPF (hash), e-mail, nível de confiabilidade — vinculados ao chamado quando o cidadão está autenticado.
+- **Fotografia:** dado pessoal (imagem do solicitante) quando o rosto do cidadão aparece; pode conter inadvertidamente imagens de terceiros, placas de veículos (dados de mobilidade), fachadas de residências.
+- **Identificação via gov.br:** nome, CPF (hash), e-mail, nível de confiabilidade — vinculados à solicitação quando o cidadão está autenticado.
 - **Descrição textual:** pode conter dados pessoais inadvertidos (menção de nomes, endereços de terceiros).
 
-**Escopo:** Cidadãos que utilizam o app do município (tenant). A consulta de chamados próximos (`GET /api/chamados/proximos`) pode ser acessada sem login, mas apenas os metadados do chamado (categoria, status, endereço aproximado) são retornados — não os dados do denunciante.
+**Escopo:** Cidadãos que utilizam o app do município (tenant). A consulta de solicitações próximas (`GET /api/chamados/proximos`) pode ser acessada sem login, mas apenas os metadados da solicitação (categoria, status, endereço aproximado) são retornados — não os dados do solicitante.
 
 **Contexto:** App móvel (Expo); coleta pontual no momento do registro; não há rastreamento contínuo de localização. O risco é a **localização precisa registrada no banco**, não o rastreamento em tempo real.
 
-**Base legal LGPD:** Art. 7º, III (execução de política pública — gestão territorial urbana) e art. 23 (tratamento pelo Poder Público). Para o caso de cidadão que opta por criar conta e associar seu histórico: art. 7º, I (consentimento), mas o consentimento não é exigível para a abertura do chamado anônimo.
+**Base legal LGPD:** Art. 7º, III (execução de política pública / exercício de competência legal do Legislativo — recebimento e encaminhamento de demandas do cidadão) e art. 23 (tratamento pelo Poder Público). Para o caso de cidadão que opta por criar conta e associar seu histórico: art. 7º, I (consentimento), mas o consentimento não é exigível para a abertura da solicitação anônima.
 
 **Base legal GDPR:** Art. 6.1(e) — tarefa realizada no exercício de função pública / interesse público.
 
@@ -221,9 +223,9 @@ O tratamento é legítimo, proporcionado e amparado em obrigação legal. A libe
 |-------|-------------|----------|------------|
 | `id` (uuid) | Técnico | Indiretamente | Referencia o chamado; não expor ao público |
 | `protocolo` | Identificador público | Indiretamente | Expor apenas ao titular ou por consulta direta |
-| `cidadao_id` | FK para `users` | Sim | Nulo para chamados anônimos; vincula identidade gov.br |
-| `categoria` | Operacional | Não | Tipo de ocorrência |
-| `status` | Operacional | Não | Estado do chamado |
+| `cidadao_id` | FK para `users` | Sim | Nulo para solicitações anônimas; vincula identidade gov.br |
+| `categoria` | Operacional | Não | Tipo de solicitação |
+| `status` | Operacional | Não | Estado da solicitação |
 | `descricao` | Textual livre | Potencialmente | Pode conter PII inadvertida (nomes, endereços de terceiros) |
 | `geo` (geography Point) | Localização exata | **Sim — alto risco** | Coordenadas precisas; revela endereço, rotina |
 | `endereco` | Endereço textual | Sim | Logradouro aproximado gerado por geocodificação reversa |
@@ -241,13 +243,13 @@ O tratamento é legítimo, proporcionado e amparado em obrigação legal. A libe
 
 | Campo | Tipo de dado | Pessoal? | Observação |
 |-------|-------------|----------|------------|
-| `ator_id` | FK para `users` (servidor) | Sim | Identifica o servidor que atualizou |
+| `ator_id` | FK para `users` (servidor) | Sim | Identifica o servidor da Câmara que atualizou |
 | `comentario` | Textual livre | Potencialmente | Pode conter PII inadvertida |
 
 **Categorias de titulares:**
-- Cidadãos denunciantes (identificados ou anônimos).
+- Cidadãos solicitantes (identificados ou anônimos).
 - Terceiros que aparecem inadvertidamente em fotos.
-- Servidores municipais que atendem os chamados.
+- Servidores da Câmara (gabinetes, comissões/setores) que atendem as solicitações.
 
 ---
 
@@ -258,8 +260,8 @@ O tratamento é legítimo, proporcionado e amparado em obrigação legal. A libe
 | **Coleta** | App móvel envia `multipart` com foto, coordenadas e descrição. O app pede permissão de câmera e localização com justificativa clara; o cidadão pode recusar cada uma. |
 | **Transmissão** | HTTPS exclusivamente. O app nunca acessa o storage diretamente; a foto vai à API (NestJS) que valida, sanitiza e grava no MinIO. |
 | **Armazenamento** | `chamados`: PostgreSQL com RLS por `tenant_id`. `chamado_fotos`: referência (`storage_key`) no banco; arquivo no MinIO. Dados cifrados em repouso (volume). |
-| **Processamento** | Detecção de duplicados por proximidade (`ST_DWithin`, 30 m); classificação opcional por IA (ver item 7); roteamento à secretaria; atualização de status. |
-| **Acesso** | Gestor/equipe: acesso ao chamado completo (incluindo geo e fotos) via painel interno. Cidadão: acesso ao próprio chamado por protocolo. Público: apenas `bairro`, `categoria`, `status` no mapa — sem geo exata, sem identidade do denunciante, sem foto. |
+| **Processamento** | Detecção de duplicados por proximidade (`ST_DWithin`, 30 m); classificação opcional por IA (ver item 7); roteamento ao gabinete/comissão/setor competente; atualização de status. |
+| **Acesso** | Gestor/equipe: acesso à solicitação completa (incluindo geo e fotos) via painel interno. Cidadão: acesso à própria solicitação por protocolo. Público: apenas `bairro`, `categoria`, `status` no mapa — sem geo exata, sem identidade do solicitante, sem foto. |
 | **Retenção** | Ver política detalhada abaixo. |
 | **Eliminação/Anonimização** | Ver política detalhada abaixo. |
 
@@ -271,7 +273,7 @@ Esta política deve ser implementada como job de expurgo na fila `integracoes`.
 |------|---------------|-------------------|------|
 | `geo` (coordenadas exatas) | Chamado marcado como `resolvido` ou `cancelado` | 90 dias | **Anonimizar:** substituir por centroide do bairro (`bairro_centroid`) ou nulo. Preservar `bairro` para estatísticas. |
 | `cidadao_id` (vínculo de identidade) | Chamado marcado como `resolvido` ou `cancelado` | 90 dias | **Desvincular:** setar `cidadao_id = NULL` (já tem `ON DELETE SET NULL`; aplicar também por job após 90 dias, independentemente de exclusão do usuário). |
-| Fotos (`chamado_fotos`) | Chamado marcado como `resolvido` ou `cancelado` | 6 meses | **Excluir** do storage (MinIO) e a referência do banco. Foto serve para comprovação e inspeção de campo — após resolução e prazo de contestação, não há mais finalidade. |
+| Fotos (`chamado_fotos`) | Chamado marcado como `resolvido` ou `cancelado` | 6 meses | **Excluir** do storage (MinIO) e a referência do banco. Foto serve para comprovação e instrução da demanda — após resolução e prazo de contestação, não há mais finalidade. |
 | `descricao` (texto livre) | Chamado arquivado (resolvido/cancelado + 1 ano) | 1 ano | **Anonimizar:** substituir por `[DESCRIÇÃO REMOVIDA — PRAZO DE RETENÇÃO EXPIRADO]`. Preservar categoria, bairro, datas e status para estatísticas. |
 | Registro completo do chamado | Chamado arquivado | 2 anos após arquivamento | **Anonimizar** todos os campos pessoais remanescentes. O registro de ocorrência (protocolo, categoria, bairro, datas) é mantido indefinidamente para fins de estatística e controle da gestão pública. |
 | `chamado_atualizacoes` (`ator_id`) | Chamado arquivado + 5 anos | 5 anos | Manter para auditoria interna; após 5 anos, setar `ator_id = NULL` (servidor anônimo). |
@@ -286,13 +288,13 @@ Esta política deve ser implementada como job de expurgo na fila `integracoes`.
 
 | ID | Risco ao Titular | Probabilidade | Impacto | Nível |
 |----|-----------------|--------------|---------|-------|
-| R-01 | Geolocalização exata revela endereço residencial do denunciante, permitindo identificação e retaliação | M | A | **Alto** |
-| R-02 | Acúmulo de chamados de um mesmo cidadão revela rotina (horários, locais frequentados) | M | A | **Alto** |
-| R-03 | Foto contém rosto do denunciante, rosto de terceiros ou placa de veículo, possibilitando identificação de pessoas não consentidas | A | M | **Alto** |
-| R-04 | Denúncia de terreno abandonado ou animal pertencente a pessoa identificável expõe o denunciado sem contraditório | M | M | **Médio** |
-| R-05 | Mapa público de chamados próximos com geo exata permite rastrear o denunciante | B | A | **Médio** |
+| R-01 | Geolocalização exata revela endereço residencial do solicitante, permitindo identificação e retaliação | M | A | **Alto** |
+| R-02 | Acúmulo de solicitações de um mesmo cidadão revela rotina (horários, locais frequentados) | M | A | **Alto** |
+| R-03 | Foto contém rosto do solicitante, rosto de terceiros ou placa de veículo, possibilitando identificação de pessoas não consentidas | A | M | **Alto** |
+| R-04 | Solicitação que cita pessoa identificável (ex.: reclamação envolvendo terceiro) expõe o citado sem contraditório | M | M | **Médio** |
+| R-05 | Mapa público de solicitações próximas com geo exata permite rastrear o solicitante | B | A | **Médio** |
 | R-06 | Vazamento do banco expõe geolocalização e identidade em conjunto (dump completo) | B | A | **Médio** |
-| R-07 | Servidor público interno abusa do acesso a chamados para identificar denunciantes de irregularidades (ameaça interna) | B | A | **Médio** |
+| R-07 | Servidor público interno abusa do acesso às solicitações para identificar cidadãos que reportam irregularidades (ameaça interna) | B | A | **Médio** |
 | R-08 | Retenção indefinida da geolocalização exata além do prazo de finalidade | A | M | **Alto** |
 | R-09 | Cidadão não percebe que está sendo identificado ao abrir chamado logado (falta de transparência) | M | M | **Médio** |
 | R-10 | IA que processa fotos/descrição para triagem retém dados pessoais em logs da API externa (Anthropic) | M | M | **Médio** |
@@ -309,7 +311,7 @@ Esta política deve ser implementada como job de expurgo na fila `integracoes`.
 | RLS por tenant | `app_enable_tenant_rls('chamados')` e idem para `chamado_fotos` e `chamado_atualizacoes` | Implementado no schema |
 | Fronteira de dados | App nunca acessa storage diretamente; foto vai via API (multipart) | Implementado (arquitetura) |
 | HTTPS obrigatório | Cloudflare + Nginx; sem tráfego em claro | Implementado (infra) |
-| RBAC para acesso interno | Apenas roles internas (`gestor`, `servidor`, `admin_prefeitura`) acessam dados completos | Previsto (RBAC na spec) |
+| RBAC para acesso interno | Apenas roles internas (`gestor`, `servidor`, `admin_prefeitura` — Administrador da Câmara) acessam dados completos | Previsto (RBAC na spec) |
 | `ON DELETE SET NULL` em `cidadao_id` | Exclusão de usuário anonimiza o vínculo | Implementado no schema |
 
 #### Medidas adicionais recomendadas (a implementar — ver checklist na Parte III)
@@ -342,7 +344,7 @@ Se a IA (API Anthropic) for usada para classificar categoria, sugerir prioridade
 
 ### 8. Riscos Residuais e Conclusão — Denúncias Georreferenciadas
 
-**Risco residual principal:** O risco R-01 (geolocalização revela endereço do denunciante) é inerente ao serviço, mas é **reduzido a aceitável** pela combinação de: anonimato opcional, não exposição da geo exata no mapa público, anonimização após 90 dias da resolução, e controle de acesso interno com auditoria. O risco zero exigiria não coletar localização, o que tornaria o serviço inviável.
+**Risco residual principal:** O risco R-01 (geolocalização revela endereço do solicitante) é inerente ao serviço, mas é **reduzido a aceitável** pela combinação de: anonimato opcional, geolocalização opcional, não exposição da geo exata no mapa público, anonimização após 90 dias da resolução, e controle de acesso interno com auditoria. O risco zero exigiria não coletar localização, o que tornaria parte do serviço menos útil.
 
 O risco R-03 (fotos com terceiros) é mitigado pela remoção de EXIF e pela restrição de acesso à foto, mas não pode ser eliminado sem revisar manualmente cada imagem — o que não é escalonável. A medida de retenção limitada (exclusão em 6 meses após resolução) é a principal mitigação de longo prazo.
 
@@ -369,7 +371,7 @@ Este checklist traduz as recomendações do DPIA em itens concretos que o backen
 ### API — Contrato de Dados (NestJS service/controller)
 
 - [ ] **`POST /api/chamados`:** aceitar campo `anonimo: boolean` no payload. Se `true`, gravar `cidadao_id = null` mesmo que o JWT esteja presente. Nunca forçar identificação.
-- [ ] **`GET /api/chamados/proximos` (público sem auth):** retornar apenas `{ categoria, status, bairro, protocolo }`. Nunca retornar `geo` (coordenadas exatas), `cidadao_id`, `descricao` completa ou qualquer dado que permita identificar o denunciante.
+- [ ] **`GET /api/chamados/proximos` (público sem auth):** retornar apenas `{ categoria, status, bairro, protocolo }`. Nunca retornar `geo` (coordenadas exatas), `cidadao_id`, `descricao` completa ou qualquer dado que permita identificar o solicitante.
 - [ ] **`GET /api/chamados/:protocolo` (cidadão titular):** retornar dados completos do próprio chamado (incluindo geo e status das fotos). Restringir ao `cidadao_id` do JWT — nenhum outro cidadão pode consultar chamado alheio pelo protocolo.
 - [ ] **Acesso interno (gestor/servidor):** RBAC obrigatório (`@Roles('gestor', 'servidor', 'admin_prefeitura')`); registrar acesso a chamados com `cidadao_id` preenchido no `audit_log` com `{ ator_id, chamado_id, acao: 'acesso_dado_pessoal', timestamp }`.
 - [ ] **Fotos:** nunca retornar `storage_key` em APIs públicas. Gerar URL assinada com TTL de 15 minutos apenas para: (a) o cidadão titular via JWT validado, (b) o servidor interno autenticado. URL assinada gerada pelo backend, nunca pelo frontend.
@@ -389,7 +391,7 @@ Este checklist traduz as recomendações do DPIA em itens concretos que o backen
 
 ### Aviso de Privacidade no App (mobile)
 
-- [ ] **Tela de consentimento antes da primeira abertura de chamado:** explicar que a localização e a foto serão enviadas à prefeitura, finalidade, prazo de retenção e direito de usar anonimato. Botão "Entendo" registrado localmente (não é consentimento para base legal — o tratamento é política pública; é transparência informacional conforme LGPD art. 9º).
+- [ ] **Tela de consentimento antes da primeira abertura de solicitação:** explicar que a localização (opcional) e a foto serão enviadas à Câmara, finalidade, prazo de retenção e direito de usar anonimato. Botão "Entendo" registrado localmente (não é consentimento para base legal — o tratamento é política pública; é transparência informacional conforme LGPD art. 9º).
 - [ ] **Opção "Enviar anonimamente"** visível na tela de abertura de chamado, independentemente de o cidadão estar logado.
 - [ ] **Justificativa contextual** ao solicitar permissão de câmera e localização (texto explicativo antes do prompt do SO).
 - [ ] **Graceful degradation:** chamado sem foto e com localização manual no mapa devem ser funcionais.
@@ -409,11 +411,11 @@ As entradas abaixo complementam o ROPA de `docs/06-lgpd-gdpr.md`.
 
 | # | Operação | Categorias de dados | Titulares | Base legal LGPD | Retenção | Compartilhamento | Medidas de segurança |
 |---|----------|--------------------|-----------|-----------------|-----------|--------------------|----------------------|
-| 2 | Folha de pagamento (pública) | nome, cargo, vínculo, órgão, remuneração, matrícula mascarada | Servidores públicos | Art. 7º, II (LC 131/2009) + art. 23 | Permanente (acervo público) | Publicação aberta controlada | Sem CPF; matrícula mascarada; `nome_suprimido` para medidas protetivas; rate limiting; RLS; criptografia em trânsito e repouso |
-| 5a | Chamados — identificação do denunciante | `cidadao_id` (FK), nome/e-mail via `users` | Cidadãos (opcional — nulo se anônimo) | Art. 7º, III (política pública) | Desvinculado em até 90 dias após resolução | Secretaria competente (interno) | RLS; `anonimo` flag; job de expurgo; audit_log de acesso |
-| 5b | Chamados — geolocalização | `geo` (Point WGS84), `endereco`, `bairro` | Cidadãos | Art. 7º, III (política pública) | Precisa: 90 dias pós-resolução; bairro: permanente para estatísticas | Secretaria competente; equipe de campo (interno) | RLS; `geo_anonimizada` flag; job de expurgo; nunca exposta em API pública |
-| 5c | Chamados — fotos | `storage_key` (referência); arquivo no MinIO | Cidadãos e terceiros inadvertidos | Art. 7º, III (política pública) | 6 meses pós-resolução | Secretaria competente (URL assinada com TTL) | EXIF removido no backend; URL assinada; RLS; job de expurgo |
-| 5d | Chamados — descrição textual | Texto livre (pode conter PII) | Cidadãos e terceiros mencionados | Art. 7º, III (política pública) | 1 ano após arquivamento | Secretaria competente (interno) | Anonimização por job; sem exposição em API pública sem auth |
+| 2 | Folha de pagamento (pública) | nome, cargo/mandato, vínculo, órgão, remuneração/subsídio, matrícula mascarada | Vereadores e servidores da Câmara | Art. 7º, II (LC 131/2009) + art. 23 | Permanente (acervo público) | Publicação aberta controlada | Sem CPF; matrícula mascarada; `nome_suprimido` para medidas protetivas; rate limiting; RLS; criptografia em trânsito e repouso |
+| 5a | Solicitações — identificação do solicitante | `cidadao_id` (FK), nome/e-mail via `users` | Cidadãos (opcional — nulo se anônimo) | Art. 7º, III (política pública) | Desvinculado em até 90 dias após resolução | Gabinete/comissão/setor competente (interno) | RLS; `anonimo` flag; job de expurgo; audit_log de acesso |
+| 5b | Solicitações — geolocalização | `geo` (Point WGS84), `endereco`, `bairro` | Cidadãos | Art. 7º, III (política pública) | Precisa: 90 dias pós-resolução; bairro: permanente para estatísticas | Gabinete/comissão/setor competente (interno) | RLS; `geo_anonimizada` flag; job de expurgo; nunca exposta em API pública |
+| 5c | Solicitações — fotos | `storage_key` (referência); arquivo no MinIO | Cidadãos e terceiros inadvertidos | Art. 7º, III (política pública) | 6 meses pós-resolução | Gabinete/comissão/setor competente (URL assinada com TTL) | EXIF removido no backend; URL assinada; RLS; job de expurgo |
+| 5d | Solicitações — descrição textual | Texto livre (pode conter PII) | Cidadãos e terceiros mencionados | Art. 7º, III (política pública) | 1 ano após arquivamento | Gabinete/comissão/setor competente (interno) | Anonimização por job; sem exposição em API pública sem auth |
 
 ---
 
@@ -438,10 +440,10 @@ As entradas abaixo complementam o ROPA de `docs/06-lgpd-gdpr.md`.
 | Endpoints | `POST /ia/triagem` (interno, RBAC), `POST /ia/busca` (público), `POST /ia/chat` (público) |
 | Status do OCR | Previsto — não em produção; avaliado preventivamente neste adendo |
 | Data de início | Go-live do módulo IA (a definir por tenant; feature flag por tenant recomendada) |
-| Controlador | Prefeitura Municipal contratante (tenant). |
+| Controlador | Câmara Municipal contratante (tenant). |
 | Operador | Empresa operadora da plataforma SaaS. |
 | Subprocessador de IA | Anthropic PBC (EUA) — API Claude. Processamento ocorre fora do Brasil (transferência internacional). |
-| Encarregado (DPO) | A nomear por cada prefeitura (LGPD art. 41). |
+| Encarregado (DPO) | A nomear por cada câmara (LGPD art. 41). |
 
 ---
 
@@ -451,7 +453,7 @@ A camada de IA cobre três finalidades distintas com bases legais distintas. O e
 
 #### 2.1 Triagem de Manifestações (Ouvidoria e ESIC)
 
-**Finalidade:** Auxiliar o servidor público na classificação inicial de manifestações recebidas pela Ouvidoria (Lei 13.460/2017) e pelo ESIC (LAI 12.527/2011), sugerindo tipo, secretaria competente e prioridade. O objetivo é aumentar a eficiência do processo de atendimento — um serviço público legalmente obrigatório.
+**Finalidade:** Auxiliar o servidor público na classificação inicial de manifestações recebidas pela Ouvidoria (Lei 13.460/2017) e pelo ESIC (LAI 12.527/2011), sugerindo tipo, comissão/setor competente e prioridade. O objetivo é aumentar a eficiência do processo de atendimento — um serviço público legalmente obrigatório.
 
 **O que o modelo recebe:** `canal` (ouvidoria/ESIC), `assunto` (texto livre digitado pelo cidadão) e `descricao` (texto livre do corpo da manifestação). Nenhum dado identificador do solicitante — nome, e-mail, CPF, protocolo, `cidadao_id` — é enviado ao modelo. Isso está implementado em `ia.prompts.ts` (`usuarioTriagem`) e confirmado em `ia.service.ts` (o `select` da query busca apenas `canal`, `assunto` e `descricao`).
 
@@ -463,7 +465,7 @@ A camada de IA cobre três finalidades distintas com bases legais distintas. O e
 
 #### 2.2 Busca Semântica (RAG) sobre o CMS do Tenant
 
-**Finalidade:** Permitir que cidadãos encontrem informações em conteúdo oficial publicado pela prefeitura (páginas e blocos do CMS), com retorno de trechos e citação de fonte.
+**Finalidade:** Permitir que cidadãos encontrem informações em conteúdo oficial publicado pela Câmara (páginas e blocos do CMS — leis/normas, projetos de lei, pautas de sessões, notícias), com retorno de trechos e citação de fonte.
 
 **O que o modelo recebe:** A pergunta digitada pelo cidadão mais os trechos recuperados do CMS. A pergunta é dado pessoal apenas se o cidadão incluir informações sobre si mesmo no texto livre (risco residual — ver seção 6, R-03).
 
@@ -493,7 +495,7 @@ A triagem por IA no presente sistema **não constitui "decisão tomada unicament
 
 1. **Saída explicitamente marcada como sugestão:** O retorno de `IaService.triagem()` inclui o campo `revisaoHumana: true`, sinalizando ao sistema consumidor que a IA produziu sugestão, não decisão. O system prompt do modelo reitera: "Sua resposta é uma SUGESTÃO para revisão humana — nunca uma decisão final."
 
-2. **Ausência de automação da consequência:** A API não aplica automaticamente a triagem sugerida à manifestação. O servidor humano (role `OUVIDOR`, `GESTOR` ou `ADMIN_PREFEITURA`) deve confirmar ou corrigir antes de qualquer efeito jurídico sobre o chamado (roteamento à secretaria, prazos, arquivamento).
+2. **Ausência de automação da consequência:** A API não aplica automaticamente a triagem sugerida à manifestação. O servidor humano (role `OUVIDOR`, `GESTOR` ou `ADMIN_PREFEITURA` — Administrador da Câmara) deve confirmar ou corrigir antes de qualquer efeito jurídico sobre a manifestação (roteamento à comissão/setor, prazos, arquivamento).
 
 3. **Endpoint com RBAC interno:** `POST /ia/triagem` exige autenticação e role qualificada (`@Roles(Role.OUVIDOR, Role.GESTOR, Role.ADMIN_PREFEITURA)`). O cidadão não tem acesso direto ao resultado da triagem — o que chega ao cidadão é o protocolo e o status do atendimento, gerados pelo fluxo humano posterior.
 
@@ -511,7 +513,7 @@ Deve existir um campo que documente que a sugestão de IA foi revisada e qual fo
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
-| `ia_triagem_sugestao` | `jsonb` | Saída bruta da IA (tipo, secretaria, prioridade, resumo, confiança) |
+| `ia_triagem_sugestao` | `jsonb` | Saída bruta da IA (tipo, comissão/setor, prioridade, resumo, confiança) |
 | `ia_triagem_em` | `timestamptz` | Momento em que a sugestão foi gerada |
 | `ia_triagem_revisada_por` | `uuid FK users` | Servidor que revisou a sugestão |
 | `ia_triagem_revisada_em` | `timestamptz` | Momento da revisão humana |
@@ -580,7 +582,7 @@ Evoluir o `usuarioTriagem()` em `ia.prompts.ts` para incluir uma etapa de saniti
 
 #### 4.4 GDPR — Para Cidadãos na UE
 
-Se a plataforma for usada por prefeituras com cidadãos titulares na UE (improvável, mas previsto em `docs/06-lgpd-gdpr.md`), as SCCs no DPA com Anthropic cobrem a transferência UE → EUA sob o GDPR art. 46.2(c). Verificar se o Data Privacy Framework (DPF) UE–EUA cobre a Anthropic (confirmar auto-certificação); se sim, o art. 45 do GDPR pode ser usado alternativamente. Para dados sensíveis de titulares UE (GDPR art. 9), a base legal para a transferência deve ser explicitada no DPA.
+Se a plataforma for usada por câmaras com cidadãos titulares na UE (improvável, mas previsto em `docs/06-lgpd-gdpr.md`), as SCCs no DPA com Anthropic cobrem a transferência UE → EUA sob o GDPR art. 46.2(c). Verificar se o Data Privacy Framework (DPF) UE–EUA cobre a Anthropic (confirmar auto-certificação); se sim, o art. 45 do GDPR pode ser usado alternativamente. Para dados sensíveis de titulares UE (GDPR art. 9), a base legal para a transferência deve ser explicitada no DPA.
 
 ---
 

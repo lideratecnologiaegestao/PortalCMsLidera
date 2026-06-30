@@ -7,7 +7,7 @@
 | Vazamento cross-tenant | bug em query/filtro | **RLS** no banco (não confia no app) + teste de isolamento obrigatório |
 | Elevação de privilégio | endpoint sem guard | `RolesGuard` + matriz de permissões; super_admin isolado da plataforma |
 | Falsificação de identidade | sessão/token | OIDC gov.br validado (JWKS, iss/aud/exp/nonce); sessão HttpOnly; MFA p/ perfis sensíveis |
-| Adulteração de dado oficial | Diário Oficial | assinatura ICP-Brasil + imutabilidade + carimbo de tempo |
+| Adulteração de dado oficial | Diário Oficial do Legislativo / leis e normas | assinatura ICP-Brasil + imutabilidade + carimbo de tempo |
 | Injeção | entrada não validada | validação (Zod/class-validator), Prisma parametrizado, sem SQL concatenado |
 | Webhook forjado | endpoint público | HMAC validado com `timingSafeEqual` antes de enfileirar |
 | Exposição de segredo | repo/log | `${VAR}`, `.env` fora do git, secret scanning no CI |

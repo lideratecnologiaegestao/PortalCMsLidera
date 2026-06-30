@@ -5,7 +5,7 @@ PostgreSQL 16 + PostGIS. As migrations em `db/*.sql` são a **fonte da verdade**
 ## Convenções
 
 - PKs `uuid` com `gen_random_uuid()`; `citext` para e-mails; timestamps `timestamptz`.
-- Toda tabela de tenant: `tenant_id uuid NOT NULL` + `SELECT app_enable_tenant_rls('tabela')`.
+- Toda tabela de tenant (cada câmara é um tenant): `tenant_id uuid NOT NULL` + `SELECT app_enable_tenant_rls('tabela')`.
 - Índices compostos por `tenant_id` + coluna de filtro (status/data); geo via GIST.
 - FKs com `ON DELETE` explícito. Migrations ordenadas `NNN_descricao.sql`, nunca editar uma já aplicada.
 
@@ -13,9 +13,9 @@ PostgreSQL 16 + PostGIS. As migrations em `db/*.sql` são a **fonte da verdade**
 
 | Tabela | Propósito | RLS | Notas |
 |--------|-----------|-----|-------|
-| `tenants` | Registro de prefeituras | — (registro) | escrita só por super_admin |
+| `tenants` | Registro de câmaras | — (registro) | escrita só por super_admin |
 | `audit_log` | Trilha de ações/falhas | sim (aceita tenant NULL) | dead-letter de workers |
-| `secretarias` | Estrutura organizacional | sim | |
+| `secretarias` | Estrutura organizacional (comissões/setores) | sim | nome de tabela herdado da base; representa comissões/setores da câmara |
 | `users` | Usuários e papéis | sim | `govbr_sub`, `role`, MFA; unicidade email por tenant |
 | `tenant_themes` | Design tokens + WCAG | sim | `wcag_ok` bloqueia save |
 | `cms_pages` / `cms_blocks` | CMS dinâmico | sim | blocos = props de componentes |
@@ -26,7 +26,7 @@ PostgreSQL 16 + PostGIS. As migrations em `db/*.sql` são a **fonte da verdade**
 | `pesquisa_satisfacao` | Avaliação pós-conclusão (Lei 13.460) | sim (RLS papel) | 1 por manifestação |
 | `chamados` | App cidadão (geo) | sim | `geography(Point,4326)` + GIST |
 | `chamado_fotos` / `chamado_atualizacoes` | Mídia e histórico | sim | |
-| `servicos` | Carta de Serviços ao Cidadão (Lei 13.460/2017) | sim | slug `citext` único por tenant; etapas em `jsonb`; índices em `(tenant_id, publicado)` e `(tenant_id, categoria)` |
+| `servicos` | Carta de Serviços ao Cidadão da câmara (Lei 13.460/2017) | sim | slug `citext` único por tenant; etapas em `jsonb`; índices em `(tenant_id, publicado)` e `(tenant_id, categoria)` |
 | `tenant_app_config` | Configuração white-label do App do Cidadão por tenant (ADR-0006 Fase 1) | sim | 1 linha por tenant (`UNIQUE tenant_id`); divide-se em build-time (identidade EAS, assets de storage) e runtime (tema, módulos, onboarding, acesso rápido, categorias de chamados, flags push/biometria). Sem PII; base legal LGPD art. 7º III. Índice em `(tenant_id)`. |
 | `tenant_app_builds` | Histórico de builds EAS por tenant (ADR-0006 — Fase 2 usa, criada na Fase 1) | sim | FSM `enfileirado→preparando→em_build→concluido\|falhou`; referencia `users.id` (ON DELETE SET NULL) para trilha de auditoria. `erro_resumo` sanitizado (sem segredos). Índice composto `(tenant_id, criado_em DESC)` + índice parcial `(tenant_id, status)` para builds ativos. |
 
@@ -54,7 +54,7 @@ As tabelas de ouvidoria recebem uma segunda camada de isolamento além do `tenan
 Funções auxiliares de contexto adicionadas na migration 065:
 - `app_current_user_role()` — texto do GUC `app.current_user_role`
 - `app_current_user_id()` — uuid do GUC `app.current_user_id`
-- `app_current_secretaria_id()` — uuid do GUC `app.current_secretaria_id`
+- `app_current_secretaria_id()` — uuid do GUC `app.current_secretaria_id` (comissão/setor; nome do identificador herdado da base)
 
 Tabelas afetadas e suas policies:
 
@@ -81,7 +81,7 @@ Novos valores no enum `user_role` (migration 064):
 ## Modelos canônicos futuros
 
 - **Transparência:** tabelas `transp_*` (receitas, despesas, licitacoes, contratos, folha) normalizadas a partir do ETL; chave natural por exercício/empenho para idempotência.
-- **Diário Oficial:** `diario_edicoes` com hash/assinatura ICP-Brasil e carimbo de tempo; imutável.
+- **Diário Oficial da Câmara:** `diario_edicoes` com hash/assinatura ICP-Brasil e carimbo de tempo; imutável.
 - **Serviços:** `servicos` (migration 015) — catálogo implementado.
 
 ## Performance
@@ -92,4 +92,4 @@ Novos valores no enum `user_role` (migration 064):
 
 ## Migração para schema dedicado (capitais)
 
-Tenant grande pode ser promovido a schema próprio: a camada Prisma e as policies seguem iguais; muda só o roteamento de conexão. Decisão por ADR.
+Tenant grande (câmara de capital/grande município) pode ser promovido a schema próprio: a camada Prisma e as policies seguem iguais; muda só o roteamento de conexão. Decisão por ADR.

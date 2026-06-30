@@ -37,12 +37,12 @@ A fronteira de camadas vale aqui: **só a API/workers** tocam Postgres, MinIO, R
 |---------|---------------------|
 | **Redis 7** (`evolution-net`, hostname `redis`) | BullMQ + cache. **Use um DB Redis dedicado** (ex.: índice 0 ou 1) e **key prefix** `portal:` — o Evolution usa o DB 6; não colida. |
 | **Evolution API** (WhatsApp) | Plugin de notificação por WhatsApp. A **fila `notificacoes`** chama o Evolution (`POST /message/sendText`, header `apikey`). Nunca pelo frontend. |
-| **Nginx + Cloudflare ZT** | Publicar `portal-web` e `portal-api` como public hostnames no túnel ZT. Multi-tenant por Host continua: CF/Nginx roteiam o domínio da prefeitura para o web, que repassa o `Host` à API. |
+| **Nginx + Cloudflare ZT** | Publicar `portal-web` e `portal-api` como public hostnames no túnel ZT. Multi-tenant por Host continua: CF/Nginx roteiam o domínio da câmara para o web, que repassa o `Host` à API. |
 | **Portainer / WSL auto-start / backups** | Operação e restart-always dos containers do portal. |
 
 ## Provisionar (falta no servidor)
 
-1. **Postgres com PostGIS (dedicado ao portal).** O *Postgres Main* atual é `postgres:16-alpine` — **não tem PostGIS** (necessário para os chamados geo). Suba um container dedicado:
+1. **Postgres com PostGIS (dedicado ao portal).** O *Postgres Main* atual é `postgres:16-alpine` — **não tem PostGIS** (necessário para os recursos georreferenciados, como o mapa de atuação/demandas dos vereadores). Suba um container dedicado:
    ```bash
    docker run -d --name portal-postgres --restart=always \
      --network evolution-net \
@@ -54,7 +54,7 @@ A fronteira de camadas vale aqui: **só a API/workers** tocam Postgres, MinIO, R
    ```
    Banco isolado do resto, com PostGIS e um papel de aplicação próprio. (Alternativa: instalar PostGIS no Main — não recomendado por acoplar o portal ao banco compartilhado.)
 
-2. **Object storage (MinIO, S3-compatível).** Não há storage de objetos hoje (só FileBrowser para arquivos grandes). O portal precisa guardar fotos de chamados, anexos e edições do Diário:
+2. **Object storage (MinIO, S3-compatível).** Não há storage de objetos hoje (só FileBrowser para arquivos grandes). O portal precisa guardar documentos de projetos de lei e tramitação, anexos de sessões/atas e edições do Diário Oficial do Legislativo:
    ```bash
    docker run -d --name portal-minio --restart=always \
      --network evolution-net \
@@ -68,7 +68,7 @@ A fronteira de camadas vale aqui: **só a API/workers** tocam Postgres, MinIO, R
 
 ## ⚠️ Pegadinha crítica: superusuário ignora RLS
 
-O *Postgres Main* documentado usa o superusuário `postgres`. **Um superusuário do PostgreSQL ignora TODAS as policies de RLS** — se o portal conectar como superusuário, o isolamento entre prefeituras simplesmente não funciona.
+O *Postgres Main* documentado usa o superusuário `postgres`. **Um superusuário do PostgreSQL ignora TODAS as policies de RLS** — se o portal conectar como superusuário, o isolamento entre câmaras simplesmente não funciona.
 
 Regras:
 - A API conecta como **`portal_app`** (papel comum, **sem** `SUPERUSER` e **sem** `BYPASSRLS`).
