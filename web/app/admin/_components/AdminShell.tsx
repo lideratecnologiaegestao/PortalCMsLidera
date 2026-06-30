@@ -268,6 +268,7 @@ const MENU_GROUPS: MenuGroup[] = [
       { href: '/admin/parlamentar', label: 'Parlamentar', icon: <IconPerson />, modulo: 'parlamentar' },
       { href: '/admin/escola', label: 'Escola Legislativa', icon: <IconBook />, modulo: 'escola' },
       { href: '/admin/eventos', label: 'Eventos', icon: <IconList />, modulo: 'eventos' },
+      { href: '/admin/pss', label: 'Processo Seletivo (PSS)', icon: <IconList />, modulo: 'pss' },
       { href: '/admin/prefeito', label: 'Prefeito / Prefeita', icon: <IconPerson />, modulo: 'prefeito' },
       { href: '/admin/historia', label: 'História do Município', icon: <IconPages /> },
       { href: '/admin/hino-brasao', label: 'Hino e Brasão', icon: <IconPages /> },
