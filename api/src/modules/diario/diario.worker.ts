@@ -15,9 +15,15 @@ interface DiarioJob {
   edicaoId: string;
 }
 
-function hostDoTenant(tenant: { dominio: string | null; slug: string } | null): string {
+function hostDoTenant(
+  tenant: { dominio: string | null; subdominio?: string | null; slug: string } | null,
+): string {
   const base = process.env.PLATFORM_BASE_DOMAIN ?? 'lidera.app.br';
-  return tenant?.dominio ?? `${tenant?.slug ?? 'portal'}.${base}`;
+  // Host roteável pelo nginx (server_name) = domínio próprio ou `subdominio`
+  // (ex.: cmserranova). NUNCA o `slug`, que não está no server_name e cairia
+  // no curinga da prefeitura → 404. Mesmo padrão de notificacoes/escola.
+  const sub = tenant?.subdominio ?? tenant?.slug ?? 'portal';
+  return tenant?.dominio ?? `${sub}.${base}`;
 }
 
 /**
