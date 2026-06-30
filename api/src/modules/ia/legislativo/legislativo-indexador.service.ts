@@ -206,6 +206,14 @@ export class LegislativoIndexadorService {
   }
 
   // ================================================================ INDEXAÇÃO INCREMENTAL
+  //
+  // MODO DE OPERAÇÃO ATUAL: BATCH. O corpus legislativo é (re)construído pelo
+  // job JOB_IA_REINDEX_LEGISLATIVO (método reindexar) — disparado pelo admin e
+  // agendável. Os métodos incrementais abaixo já existem e são testados, mas
+  // ainda NÃO são chamados pelos services de domínio.
+  // TODO(fase Docker): injetar este service em Legislativo/Sessões e chamar
+  // indexarProposicao/indexarLei/indexarAta (fire-and-forget) ao publicar/
+  // atualizar/despublicar, para a busca semântica refletir mudanças na hora.
 
   /**
    * Indexa UMA proposição publicada de forma incremental (após criar/atualizar).

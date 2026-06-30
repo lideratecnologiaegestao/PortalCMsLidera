@@ -1,4 +1,5 @@
 import { getPerfil } from '../../lib/auth';
+import { getFuncionalidades } from '../../lib/funcionalidades.server';
 import AdminLogin from './_components/AdminLogin';
 import AdminShell from './_components/AdminShell';
 import ChatWidget from '../../components/chat/ChatWidget';
@@ -33,17 +34,23 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const perfil = await getPerfil();
+  const [perfil, funcionalidades] = await Promise.all([
+    getPerfil(),
+    getFuncionalidades(),
+  ]);
 
   // Nao autenticado ou papel insuficiente: exibe somente o login
   if (!perfil || !ROLES_PERMITIDOS.has(perfil.role)) {
     return <AdminLogin />;
   }
 
-  // Autenticado: renderiza o shell completo + widget de chat interno
+  // Autenticado: renderiza o shell completo + widget de chat interno.
+  // funcionalidades gateia os módulos por tipo de entidade (câmara × prefeitura).
   return (
     <>
-      <AdminShell perfil={perfil}>{children}</AdminShell>
+      <AdminShell perfil={perfil} funcionalidades={funcionalidades}>
+        {children}
+      </AdminShell>
       <ChatWidget meuId={perfil.id} />
     </>
   );

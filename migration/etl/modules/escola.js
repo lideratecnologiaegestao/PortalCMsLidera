@@ -184,8 +184,10 @@ export async function migrarEscola(ctx) {
         atualizado_em: toTs(a.updated_at),
       });
     }
-    // descarta aulas órfãs (curso_id NULL — modulo inexistente).
-    const validAulas = aulas.filter((x) => x.curso_id != null);
+    // descarta aulas órfãs: exige curso resolvido E módulo efetivamente carregado
+    // (modulo_id é FK NOT NULL p/ curso_modulos — evita violação de FK).
+    const moduloIds = new Set(modulos.map((m) => m.id));
+    const validAulas = aulas.filter((x) => x.curso_id != null && moduloIds.has(x.modulo_id));
     await upsertBatch(tenantId, 'curso_aulas',
       ['id', 'modulo_id', 'curso_id', 'titulo', 'conteudo', 'video_url', 'storage_key', 'duracao_min',
         'ordem', 'criado_em', 'atualizado_em'], validAulas);
@@ -346,6 +348,9 @@ export async function migrarEscola(ctx) {
     const cols = await mysqlColumns('curso_certificados');
     const has = (c) => cols.has(c);
     const certs = [];
+    // codigo tem UNIQUE GLOBAL (db/106, sem tenant_id): garante unicidade na
+    // carga — em colisão, sufixo determinístico pelo id legado.
+    const codigosVistos = new Set();
     // nomes de aluno e título do curso para snapshot
     const userNome = await mapaUserNome();
     const cursoTitulo = new Map(cursos.map((c) => [c.id, c.titulo]));
@@ -354,13 +359,16 @@ export async function migrarEscola(ctx) {
       if (!insc) continue;
       const cursoId = idmap.uid('cursos', insc.curso);
       const userId = idmap.uid('users', insc.user);
+      let codigo = s(cert.codigo) || `CERT-${cert.id}`; // PRESERVADO (validação pública)
+      if (codigosVistos.has(codigo)) codigo = `${codigo}-${cert.id}`;
+      codigosVistos.add(codigo);
       certs.push({
         id: idmap.uid('curso_certificados', cert.id),
         curso_id: cursoId,
         user_id: userId,
         inscricao_id: idmap.uid('curso_inscricoes', cert.curso_inscricao_id),
         template_id: null,
-        codigo: s(cert.codigo) || `CERT-${cert.id}`, // PRESERVADO (validação pública)
+        codigo,
         nome_aluno: userNome.get(insc.user) || 'Aluno',
         titulo_curso: cursoTitulo.get(cursoId) || 'Curso',
         carga_horaria: null,

@@ -24,6 +24,8 @@ enum UserRole {
   assistente_ouvidoria
   ti
   servidor
+  vereador // L1 — parlamentar (db/102)
+  professor // L4 — Escola Legislativa (db/102)
   cidadao
   @@map("user_role")
 }

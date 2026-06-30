@@ -52,6 +52,14 @@ function tipoFromEnum(idmap, enumVal) {
   return idmap.uid('tipos_sessao_enum', key);
 }
 
+// Deduplica linhas por uma chave composta (última vence). Necessário quando o
+// destino tem UNIQUE em colunas != id (ex.: sessao_presencas UNIQUE(sessao,vereador)).
+function dedupBy(rows, keyFn) {
+  const m = new Map();
+  for (const r of rows) m.set(keyFn(r), r);
+  return [...m.values()];
+}
+
 async function carregarTiposSessao(ctx) {
   const { tenantId, idmap } = ctx;
   const tipos = [];
@@ -121,7 +129,12 @@ async function carregarSessoes(ctx) {
       id,
       tipo_sessao_id: tipoSessaoId,
       titulo,
-      data_hora: combineDateTime(ses.data_sessao, ses.hora_inicio),
+      // data_hora é NOT NULL no destino (db/104): fallback p/ created_at e, em
+      // último caso, agora — para não quebrar a carga de sessões sem data.
+      data_hora:
+        combineDateTime(ses.data_sessao, ses.hora_inicio) ||
+        toTs(ses.created_at) ||
+        new Date().toISOString(),
       local: s(ses.local),
       status: mapEnum(ses.status, SESSAO_STATUS, 'agendada', `sessao(${ses.id})`),
       quorum: null,
@@ -183,13 +196,14 @@ async function carregarPresencas(ctx) {
         criado_em: toTs(p.created_at),
       });
     }
+    const unicas = dedupBy(presencas, (p) => `${p.sessao_id}|${p.vereador_id}`);
     await upsertBatch(
       tenantId,
       'sessao_presencas',
       ['id', 'sessao_id', 'vereador_id', 'situacao', 'observacao', 'criado_em'],
-      presencas,
+      unicas,
     );
-    return presencas.length;
+    return unicas.length;
   }
 
   // Fallback: coluna JSON `presencas` (array de IDs presentes).
@@ -211,13 +225,14 @@ async function carregarPresencas(ctx) {
       });
     }
   }
+  const unicas = dedupBy(presencas, (p) => `${p.sessao_id}|${p.vereador_id}`);
   await upsertBatch(
     tenantId,
     'sessao_presencas',
     ['id', 'sessao_id', 'vereador_id', 'situacao', 'observacao', 'criado_em'],
-    presencas,
+    unicas,
   );
-  return presencas.length;
+  return unicas.length;
 }
 
 async function carregarPauta(ctx) {
