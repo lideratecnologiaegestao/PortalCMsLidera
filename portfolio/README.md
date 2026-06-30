@@ -1,0 +1,79 @@
+# Portfólio Comercial — Portal da Câmara
+
+Material de apresentação para **vender o Portal da Câmara** (plataforma SaaS multi-tenant) a Câmaras Municipais e suas Mesas Diretoras. Pasta exclusiva dos materiais de marketing/comercial.
+
+## Conteúdo desta pasta
+
+| Arquivo | Para quê serve |
+|---------|----------------|
+| **`Apresentacao-Portal-Camara.pptx`** | **Apresentação de slides (14 telas, 16:9)** — pronta para o **Google Apresentações** (importação abaixo) ou PowerPoint. Use em reuniões/projetor. |
+| **`Portfolio-Portal-Camara.docx`** | Portfólio em Word (A4), com capa, 14 seções e gráficos. Edite/imprima/envie por e-mail. |
+| **`index.html`** | Mesma apresentação em página web — abre offline (duplo clique), responsiva, ideal para projetar numa reunião ou gerar PDF (Ctrl+P → Salvar como PDF). |
+| **`Atendimento-Omnichannel.md`** | One-pager comercial do módulo de Atendimento Omnichannel com IA (5 canais). Use em propostas, e-mail comercial ou para compor seção em apresentações. |
+| `assets/` | Gráficos (PNG) usados no `.docx` e no `.pptx` — gerados automaticamente. |
+| `gerar_portfolio_docx.py` | Script que **gera os gráficos e o `.docx`**. Reexecute após editar o conteúdo. |
+| `gerar_slides_pptx.py` | Script que **gera o `.pptx`** (reaproveita os gráficos de `assets/`). |
+
+## Como abrir o `.pptx` no Google Apresentações (Google Slides)
+
+1. Acesse **[slides.google.com](https://slides.google.com)** logado na conta `comercial@lideratecnologia.com.br`.
+2. Clique em **Abrir seletor de arquivos** (ícone de pasta) → aba **Upload** → arraste o
+   `Apresentacao-Portal-Camara.pptx`. O Google converte automaticamente para Slides.
+   - _Alternativa:_ jogue o arquivo no **Google Drive**, clique com o botão direito →
+     **Abrir com → Google Apresentações**.
+3. (Opcional) Em **Arquivo → Salvar como Google Apresentações** para manter uma cópia nativa editável.
+
+As fontes usadas (Calibri) são substituídas pelas equivalentes do Google — o layout é preservado.
+Para reexportar a partir do Google: **Arquivo → Fazer download → PowerPoint (.pptx) / PDF**.
+
+## Como apresentar
+
+- **Reunião presencial / projetor:** abra `index.html` no navegador (tela cheia, F11).
+- **Enviar por e-mail / WhatsApp:** envie o `Portfolio-Portal-Camara.docx` ou exporte o `index.html` para PDF.
+- **Imprimir:** tanto o `.docx` quanto o `index.html` (`Ctrl+P`) têm layout próprio para impressão.
+
+## Como regenerar o `.docx` (após editar o conteúdo)
+
+Requer Python 3 com as bibliotecas `python-docx`, `matplotlib` e `Pillow`:
+
+```bash
+pip install python-docx matplotlib Pillow
+cd portfolio
+python gerar_portfolio_docx.py
+```
+
+O script recria `assets/*.png` e `Portfolio-Portal-Camara.docx`. Todo o texto e os gráficos
+ficam no próprio script — é o ponto único para ajustar mensagens, números e cores.
+Para editar o HTML, altere diretamente `index.html` (CSS e SVG estão embutidos no arquivo).
+
+## Seções (ambos os formatos)
+
+1. O desafio das câmaras municipais → a solução
+2. Visão geral da plataforma + arquitetura
+3. Modelo SaaS multi-tenant (uma plataforma, N câmaras)
+4. Catálogo de módulos legislativos + transversais (Parlamentar, Sessões Plenárias, Legislativo, Escola Legislativa, PSS, Eventos; e-SIC, Ouvidoria, Transparência, IA)
+5. Conformidade legal nativa (LAI, Lei 13.460, LC 131/LRF, LGPD, WCAG/eMAG, PNTP, gov.br, Lei 14.129/2021)
+6. Transparência da produção legislativa + PNTP (dimensão Atividades Finalísticas do Legislativo)
+7. Segurança & privacidade (RLS, RBAC, LGPD, auditoria)
+8. **Atendimento Omnichannel com IA (5 canais)** — Widget, WhatsApp API Oficial, Instagram Direct, Messenger, Telegram; bot 24h; caixa unificada; LGPD nativo
+9. App do Cidadão (mobile)
+10. Inteligência Artificial legislativa aplicada (busca semântica em leis/projetos, resumo de atas, OCR)
+11. Tramitação, votação nominal e frequência de vereadores — o diferencial do Legislativo
+12. Implantação flexível (nuvem GCP/AWS ou on-premise)
+13. Roadmap
+14. Por que a Lidera
+15. Chamada para ação / contato
+
+## Observações
+
+- **Sem dados sensíveis.** O material não contém segredos, credenciais nem dados pessoais.
+- **Marca:** o logotipo oficial da Lidera está em `Logos/` (SVG vetorial). O HTML usa o SVG
+  diretamente (nav, hero e rodapé); o `.docx` usa `assets/logo_lidera.png` (rasterização do
+  SVG colorido) na capa. Para trocar o logo, substitua os arquivos em `Logos/` e re-rasterize
+  o PNG (ou troque `assets/logo_lidera.png`).
+- **Personalizar:** cores, contato e preços ("sob consulta") são placeholders — ajuste no
+  `gerar_portfolio_docx.py` (Word) e no `index.html` (web).
+- **Multi-tenant:** nos gráficos e exemplos, os tenants são **Câmara A/B/C** (cada câmara = um
+  subdomínio isolado por RLS). É o poder **legislativo** — não há prefeito/secretarias/zeladoria;
+  há **Mesa Diretora**, **comissões** e **vereadores**.
+- Contato usado: **Lidera Tecnologia e Gestão** · www.lideratecnologia.com.br · comercial@lideratecnologia.com.br · demo `https://camara.lidera.app.br`.

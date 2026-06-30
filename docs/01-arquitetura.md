@@ -2,7 +2,9 @@
 
 ## Visão
 
-Plataforma SaaS **multi-tenant** que entrega o portal completo de uma prefeitura (ESIC, Ouvidoria, Transparência, Diário Oficial, Serviços, CMS, App do Cidadão) a partir de **um único código** e **uma única infraestrutura**. Cada prefeitura é um *tenant* com domínio, identidade visual e conteúdo próprios.
+Plataforma SaaS **multi-tenant** que entrega o portal completo de uma **Câmara Municipal** (poder legislativo) a partir de **um único código** e **uma única infraestrutura**. Cada câmara é um *tenant* com domínio, identidade visual e conteúdo próprios.
+
+O diferencial são os **módulos legislativos**: Parlamentar (vereadores, Mesa Diretora com vigência, comissões, representações), Sessões Plenárias (pauta, ata, presença/frequência, calendário, TV Câmara), Legislativo (projetos de lei, tramitação, votação nominal, leis/normas, iniciativa popular), Escola Legislativa (cursos, provas, certificados com QR + validação pública), PSS (processo seletivo simplificado) e Eventos/audiências públicas. Os **transversais** (e-SIC/LAI, Ouvidoria/Lei 13.460, Transparência/LRF+PNTP, IA legislativa, Tema/identidade WCAG, CMS/Notícias, LGPD, Atendimento Omnichannel, App do Cidadão) são reaproveitados da base. **Não** há prefeito/secretarias/zeladoria — a estrutura é **Mesa Diretora/comissões**.
 
 ## Princípios
 
@@ -25,7 +27,7 @@ flowchart LR
     subgraph API[NestJS - Monólito Modular]
         direction TB
         T[TenantMiddleware + AsyncLocalStorage] --> G[RolesGuard]
-        G --> Mod[Módulos: Theme, Manifestacoes, Transparencia,<br/>Diario, Servicos, AppCidadao, CMS, IA]
+        G --> Mod[Módulos: Theme, Parlamentar, Sessoes, Legislativo/Tramitacao,<br/>Manifestacoes, Transparencia, AppCidadao, CMS, IA]
     end
     Mod --> DB[(PostgreSQL + PostGIS<br/>RLS)]
     Mod --> R[(Redis)]
@@ -38,7 +40,7 @@ flowchart LR
 
 ## Multi-tenancy
 
-- **Estratégia:** shared schema + `tenant_id` + RLS. Tenants de grande porte (capitais) podem ser promovidos a **schema dedicado** sem mudar a aplicação (mesma camada Prisma, mesma policy).
+- **Estratégia:** shared schema + `tenant_id` + RLS. Tenants de grande porte (câmaras de capitais/grandes municípios) podem ser promovidos a **schema dedicado** sem mudar a aplicação (mesma camada Prisma, mesma policy).
 - **Resolução do tenant:** `TenantMiddleware` lê o `Host` (domínio próprio ou subdomínio) e guarda o `tenantId` em `AsyncLocalStorage`. O `PrismaService` injeta `app.current_tenant_id` em cada transação; as policies isolam os dados.
 - **Plataforma:** super_admin e jobs de plataforma usam `prisma.platform()` (modo `app.is_platform = on`) para operar cross-tenant (ex.: registrar tenants).
 
@@ -56,7 +58,7 @@ O backend é o **único** ponto de contato com dados e mundo externo. Regra estr
 - **Frontend (Next.js) e App (Expo)** falam **somente** com a **API**.
 - **Frontend/App não acessam** banco, storage, filas, plugins (ex.: WhatsApp/Evolution) nem APIs externas.
 - **Somente o backend** acessa banco, storage, filas, plugins e APIs externas.
-- Upload de arquivo (foto de chamado, anexo de manifestação, edição do Diário) vai **via API** (multipart); a API valida, grava no storage e guarda só a chave. **Não** há URL de upload assinada exposta ao cliente nem cliente de banco/storage no web/mobile.
+- Upload de arquivo (anexo de manifestação/e-SIC, PDF de projeto de lei, ata de sessão, vídeo da TV Câmara, edição do Diário Oficial da Câmara) vai **via API** (multipart); a API valida, grava no storage e guarda só a chave. **Não** há URL de upload assinada exposta ao cliente nem cliente de banco/storage no web/mobile.
 
 ```mermaid
 flowchart LR
@@ -76,8 +78,8 @@ Benefícios: superfície de ataque concentrada (validação, autorização, audi
 
 - **Prisma + RLS:** Prisma é a camada de query; RLS vive no SQL (Prisma não expressa policies). O `PrismaService` faz a ponte via `set_config` por transação. Ver [ADR 0001](adr/0001-multi-tenancy-rls.md).
 - **Tema dinâmico:** design tokens (JSONB por tenant) → CSS variables injetadas no SSR → Tailwind lê `var(--*)`. Validação WCAG bloqueante.
-- **FSM de manifestações:** tabela de transições declarativa + efeitos de SLA; histórico imutável de eventos.
-- **n8n para ETL:** a integração com sistemas contábeis (transparência) é heterogênea por fornecedor; n8n isola essa complexidade fora do core.
+- **FSM de manifestações e de tramitação:** tabela de transições declarativa + efeitos de SLA; histórico imutável de eventos. A mesma mecânica de máquina de estados modela a **tramitação de proposições** (do protocolo à sanção/promulgação) e a **votação nominal**.
+- **n8n para ETL:** a integração com sistemas contábeis/APLIC-TCE (transparência) é heterogênea por fornecedor; n8n isola essa complexidade fora do core.
 
 ## Estrutura de pastas
 

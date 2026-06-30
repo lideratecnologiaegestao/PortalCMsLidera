@@ -1,6 +1,8 @@
-# Documentação — Portal de Prefeitura
+# Documentação — Portal da Câmara
 
 Documentação viva do projeto. Acompanha o código no mesmo PR.
+
+Plataforma SaaS multi-tenant para **Câmaras Municipais** (poder legislativo): uma plataforma, N câmaras (cada câmara = um subdomínio isolado por RLS). Fork da plataforma de prefeitura, com os módulos do executivo substituídos pelos **módulos legislativos** (Parlamentar, Sessões Plenárias, Legislativo/Tramitação, Escola Legislativa, PSS, Eventos) e os transversais reaproveitados (e-SIC, Ouvidoria, Transparência, IA, CMS, App do Cidadão).
 
 | Doc | Conteúdo |
 |-----|----------|
@@ -10,7 +12,7 @@ Documentação viva do projeto. Acompanha o código no mesmo PR.
 | [04 — Segurança](04-seguranca.md) | Modelo de ameaças, AuthN/AuthZ, hardening |
 | [05 — DevOps & DevSecOps](05-devops-devsecops.md) | CI/CD, ambientes, pipeline de segurança, observabilidade |
 | [06 — LGPD & GDPR](06-lgpd-gdpr.md) | Bases legais, direitos do titular, ROPA, retenção |
-| [07 — DPIA / RIPD](07-dpia.md) | Relatório de Impacto à Proteção de Dados (Folha de Pagamento + Denúncias Georreferenciadas) |
+| [07 — DPIA / RIPD](07-dpia.md) | Relatório de Impacto à Proteção de Dados (Folha de Pagamento dos servidores da Câmara + Manifestações de Ouvidoria) |
 | [07b — Banco de Dados](07-banco-de-dados.md) | Modelo, RLS, índices, PostGIS |
 | [08 — Mobile](08-mobile.md) | App do Cidadão (Expo), arquitetura e fluxos |
 | [09 — Escalabilidade](09-escalabilidade.md) | Estratégia de escala, capacidade, multi-região |

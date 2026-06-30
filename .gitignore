@@ -70,3 +70,7 @@ api/storage-dev/
 *.tfstate
 *.tfstate.*
 crash.log
+
+# Python bytecode (portfolio)
+__pycache__/
+*.pyc
