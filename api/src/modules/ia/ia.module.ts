@@ -19,6 +19,12 @@ import { QUEUE_IA } from '../queue/queue.constants';
 import { IaGlobalService } from './ia-global.service';
 import { IaGlobalController } from './ia-global.controller';
 import { IaIndexadorGlobalService } from './ia-indexador-global.service';
+import { LegislativoIndexadorService } from './legislativo/legislativo-indexador.service';
+import { LegislativoIaService } from './legislativo/legislativo-ia.service';
+import {
+  LegislativoIaController,
+  LegislativoIaAdminController,
+} from './legislativo/legislativo-ia.controller';
 
 /**
  * Camada de IA: triagem de manifestações, busca/RAG multi-fonte e chatbot (API Anthropic).
@@ -46,6 +52,8 @@ import { IaIndexadorGlobalService } from './ia-indexador-global.service';
     IaAdminController,
     IaConteudosController,
     IaGlobalController,
+    LegislativoIaController,
+    LegislativoIaAdminController,
   ],
   providers: [
     IaService,
@@ -59,6 +67,8 @@ import { IaIndexadorGlobalService } from './ia-indexador-global.service';
     RerankService,
     IaGlobalService,
     IaIndexadorGlobalService,
+    LegislativoIndexadorService,
+    LegislativoIaService,
   ],
   exports: [
     IaService,
@@ -70,6 +80,7 @@ import { IaIndexadorGlobalService } from './ia-indexador-global.service';
     RerankService,
     IaGlobalService,
     IaIndexadorGlobalService,
+    LegislativoIndexadorService,
   ],
 })
 export class IaModule {}

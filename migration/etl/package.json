@@ -1,0 +1,30 @@
+{
+  "name": "etl-camara-mysql-pg",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ETL idempotente MySQL (Laravel portal-camara-old) -> PostgreSQL multi-tenant (portal-camara). Carga do tenant 'Serra Nova Dourada'.",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "etl-camara": "index.js"
+  },
+  "scripts": {
+    "etl": "node index.js",
+    "etl:dry": "node index.js --dry-run",
+    "etl:usuarios": "node index.js --only=usuarios",
+    "etl:parlamentar": "node index.js --only=parlamentar",
+    "etl:sessoes": "node index.js --only=sessoes",
+    "etl:legislativo": "node index.js --only=legislativo",
+    "etl:transparencia": "node index.js --only=transparencia",
+    "etl:manifestacoes": "node index.js --only=manifestacoes",
+    "etl:escola": "node index.js --only=escola",
+    "reconcile": "node index.js --reconcile-only"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.11.0",
+    "pg": "^8.12.0"
+  }
+}

@@ -12,11 +12,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
 import { StorageService } from '../storage/storage.service';
 import { IaIndexadorService } from '../ia/ia-indexador.service';
+import { LegislativoIndexadorService } from '../ia/legislativo/legislativo-indexador.service';
 import { AnthropicService } from '../ia/anthropic.service';
 import { BuscaSyncService } from '../busca/busca-sync.service';
 import {
   JOB_EXTRAI_TEXTO_DOCUMENTO,
   JOB_IA_REINDEX,
+  JOB_IA_REINDEX_LEGISLATIVO,
   QUEUE_IA,
 } from '../queue/queue.constants';
 
@@ -79,6 +81,7 @@ export class DocumentosFtsWorker extends WorkerHost {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly iaIndexador: IaIndexadorService,
+    private readonly legislativoIndexador: LegislativoIndexadorService,
     private readonly anthropic: AnthropicService,
     private readonly buscaSync: BuscaSyncService,
     @InjectQueue(QUEUE_IA) private readonly filaIa: Queue,
@@ -96,6 +99,20 @@ export class DocumentosFtsWorker extends WorkerHost {
       );
       this.log.log(
         `Reindexação concluída (tenant ${tenantId}): total=${resultado.total}, ok=${resultado.ok}` +
+          (resultado.motivo ? `, motivo=${resultado.motivo}` : ''),
+      );
+      return;
+    }
+
+    // ---- Reindexação vetorial LEGISLATIVA (Fase 5: proposições/leis/atas) ----
+    if (job.name === JOB_IA_REINDEX_LEGISLATIVO) {
+      const { tenantId } = job.data as ReindexJob;
+      if (!tenantId) return;
+      const resultado = await TenantContext.run({ tenantId }, () =>
+        this.legislativoIndexador.reindexar(tenantId),
+      );
+      this.log.log(
+        `Reindexação legislativa concluída (tenant ${tenantId}): total=${resultado.total}, ok=${resultado.ok}` +
           (resultado.motivo ? `, motivo=${resultado.motivo}` : ''),
       );
       return;

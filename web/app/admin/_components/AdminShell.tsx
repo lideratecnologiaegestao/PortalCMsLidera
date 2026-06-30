@@ -5,6 +5,11 @@ import { usePathname } from 'next/navigation';
 import { apiBase } from '../../../lib/auth-shared';
 import { SessaoAdminProvider } from '../../../lib/session-context';
 import type { Perfil } from '../../../lib/auth';
+import {
+  resolverFuncionalidades,
+  type Funcionalidades,
+  type Modulo,
+} from '../../../lib/funcionalidades';
 
 /* ------------------------------------------------------------------ */
 /* Mapa de itens do menu                                                */
@@ -26,6 +31,8 @@ interface MenuItem {
   icon: React.ReactNode;
   /** Quando definido, o item só aparece para papéis incluídos neste conjunto. */
   apenasRoles?: Set<string>;
+  /** Quando definido, o item só aparece se o módulo estiver habilitado p/ o tipo de entidade. */
+  modulo?: Modulo;
 }
 
 interface MenuGroup {
@@ -257,8 +264,8 @@ const MENU_GROUPS: MenuGroup[] = [
         apenasRoles: new Set(['gestor', 'admin_prefeitura', 'servidor', 'super_admin']),
       },
       { href: '/admin/secretarias', label: 'Secretarias', icon: <IconBuilding /> },
-      { href: '/admin/parlamentar', label: 'Parlamentar', icon: <IconPerson /> },
-      { href: '/admin/prefeito', label: 'Prefeito / Prefeita', icon: <IconPerson /> },
+      { href: '/admin/parlamentar', label: 'Parlamentar', icon: <IconPerson />, modulo: 'parlamentar' },
+      { href: '/admin/prefeito', label: 'Prefeito / Prefeita', icon: <IconPerson />, modulo: 'prefeito' },
       { href: '/admin/historia', label: 'História do Município', icon: <IconPages /> },
       { href: '/admin/hino-brasao', label: 'Hino e Brasão', icon: <IconPages /> },
       { href: '/admin/galeria', label: 'Galeria', icon: <IconPhoto /> },
@@ -290,7 +297,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { href: '/admin/atendimento', label: 'Chat Omnichannel', icon: <IconMessage /> },
       { href: '/admin/whatsapp/config', label: 'WhatsApp', icon: <IconMessage /> },
-      { href: '/admin/chamados', label: 'Denúncias (App)', icon: <IconAlert /> },
+      { href: '/admin/chamados', label: 'Denúncias (App)', icon: <IconAlert />, modulo: 'chamados' },
       {
         href: '/admin/ouvidor',
         label: 'Painel do Ouvidor',
@@ -385,10 +392,12 @@ function Sidebar({
   aberta,
   fechar,
   role,
+  funcionalidades,
 }: {
   aberta: boolean;
   fechar: () => void;
   role: string;
+  funcionalidades: Funcionalidades;
 }) {
   const pathname = usePathname();
 
@@ -436,7 +445,9 @@ function Sidebar({
           {MENU_GROUPS.map((group) => {
             // Filtra itens que o papel atual não pode ver
             const itensFiltrados = group.items.filter(
-              (item) => !item.apenasRoles || item.apenasRoles.has(role),
+              (item) =>
+                (!item.apenasRoles || item.apenasRoles.has(role)) &&
+                (!item.modulo || funcionalidades.modulo(item.modulo)),
             );
 
             // Omite o grupo inteiro se não sobrar nenhum item visível
@@ -713,12 +724,20 @@ function Topbar({
 
 export default function AdminShell({
   perfil,
+  funcionalidades,
   children,
 }: {
   perfil: Perfil;
+  /**
+   * Funcionalidades do tenant (tipo + flags). Opcional: quando ausente, assume
+   * o default de CÂMARA (esconde módulos do executivo). O wiring per-tenant
+   * (via getFuncionalidades no layout) é aplicado na fase de validação.
+   */
+  funcionalidades?: Funcionalidades;
   children: React.ReactNode;
 }) {
   const [sidebarAberta, setSidebarAberta] = useState(false);
+  const flags = funcionalidades ?? resolverFuncionalidades('camara', null);
 
   return (
     <SessaoAdminProvider sessao={{ id: perfil.id, role: perfil.role }}>
@@ -734,6 +753,7 @@ export default function AdminShell({
             aberta={sidebarAberta}
             fechar={() => setSidebarAberta(false)}
             role={perfil.role}
+            funcionalidades={flags}
           />
 
           <main

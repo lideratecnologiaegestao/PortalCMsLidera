@@ -1,0 +1,21 @@
+import { ComponentProps } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+/** Nome de glyph do conjunto MaterialCommunityIcons (incluso no Expo). */
+export type NomeIcone = ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+/**
+ * Ícone vetorial temado — um único conjunto, traço consistente, tinta na cor da
+ * marca da câmara. Evita emoji (renderiza diferente em cada aparelho).
+ */
+export function Icone({
+  nome,
+  tamanho = 24,
+  cor,
+}: {
+  nome: NomeIcone;
+  tamanho?: number;
+  cor: string;
+}) {
+  return <MaterialCommunityIcons name={nome} size={tamanho} color={cor} />;
+}

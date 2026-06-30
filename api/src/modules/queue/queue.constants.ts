@@ -27,6 +27,7 @@ export const QUEUE_IA = 'ia';
 export const JOB_IA_TRIAGEM = 'ia.triagem-manifestacao';
 export const JOB_EXTRAI_TEXTO_DOCUMENTO = 'ia.extrai-texto-documento'; // FTS do conteúdo do arquivo
 export const JOB_IA_REINDEX = 'ia.reindexar-corpus'; // (re)constrói ia_chunks (vetorial, Camada 4)
+export const JOB_IA_REINDEX_LEGISLATIVO = 'ia.reindexar-corpus-legislativo'; // (re)constrói chunks legislativos (proposições/leis/atas) em ia_chunks
 
 // Expurgo/anonimização por retenção (LGPD/DPIA) — manutenção, baixa prioridade.
 export const QUEUE_EXPURGO = 'expurgo';

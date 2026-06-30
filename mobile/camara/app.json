@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Câmara Municipal",
+    "slug": "camara-cidadao",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "camaracidadao",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B5394"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.leg.camara.cidadao"
+    },
+    "android": {
+      "package": "br.leg.camara.cidadao",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B5394"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "apiUrl": "https://camara-exemplo.lidera.app.br",
+      "tenantSlug": "camara-exemplo"
+    }
+  }
+}

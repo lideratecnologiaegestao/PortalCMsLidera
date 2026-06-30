@@ -1,0 +1,8 @@
+# Dependências (declaradas em package.json; instaladas com `npm install`)
+node_modules/
+
+# Config local com credenciais — NUNCA commitar
+.env
+
+# Logs/saídas de execução
+*.log
