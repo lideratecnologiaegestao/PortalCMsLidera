@@ -1,0 +1,81 @@
+# =====================================================================
+# Portal da Câmara — stack de PRODUÇÃO (Servidor Lidera)
+# =====================================================================
+# SaaS multi-câmaras. Reusa a infra existente (Redis, MinIO, Evolution) na
+# rede `evolution-net`. Banco DEDICADO `camara-postgres` (postgis + pgvector).
+#
+# CRÍTICO (RLS): a API conecta como `portal_app` (NOSUPERUSER NOBYPASSRLS) —
+# superusuário burla o RLS e quebra o isolamento entre câmaras. Ver .env.prod.
+#
+# Subir:  wsl bash -c "cd /mnt/d/Site/portal-camara && docker compose -f docker-compose.camara.prod.yml --env-file .env.prod up -d --build"
+# Ver runbook completo em docs/deploy-camara.md.
+# =====================================================================
+
+networks:
+  evolution-net:
+    external: true
+
+volumes:
+  # Volume já criado no provisioning (mantém os dados/seed). external => não recriar.
+  camara_postgres_data:
+    external: true
+
+services:
+  # Banco dedicado (postgis + pgvector). Superusuário só para admin/migrations;
+  # a API usa o role portal_app (criado no provisioning — ver runbook).
+  camara-postgres:
+    image: portal-postgres-pgvector:16
+    container_name: camara-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: camara
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+    volumes:
+      - camara_postgres_data:/var/lib/postgresql/data
+    ports:
+      - '127.0.0.1:5435:5432'
+    networks:
+      - evolution-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d camara']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # API NestJS. Lê .env.prod (DATABASE_URL=portal_app). Exposta só no loopback;
+  # o Nginx (Windows) faz proxy /api -> 127.0.0.1:3011.
+  camara-api:
+    image: portal-camara-api:latest
+    build:
+      context: ./api
+    container_name: camara-api
+    restart: always
+    env_file:
+      - .env.prod
+    ports:
+      - '127.0.0.1:3011:3001'
+    depends_on:
+      camara-postgres:
+        condition: service_healthy
+    networks:
+      - evolution-net
+
+  # Portal Next.js (standalone). SSR fala com a API pela rede interna; o browser
+  # usa /api do mesmo host (Nginx roteia). Exposto só no loopback (3010).
+  camara-web:
+    image: portal-camara-web:latest
+    build:
+      context: ./web
+    container_name: camara-web
+    restart: always
+    environment:
+      NODE_ENV: production
+      API_URL: http://camara-api:3001
+      PORT: '3000'
+    ports:
+      - '127.0.0.1:3010:3000'
+    depends_on:
+      - camara-api
+    networks:
+      - evolution-net
