@@ -98,6 +98,8 @@ model Tenant {
   evolutionInstancia        String? @map("evolution_instancia")
   aplicHabilitado     Boolean   @default(false) @map("aplic_habilitado")
   aplicUg             String?   @map("aplic_ug")
+  tipo                String    @default("camara") // camara | prefeitura (db/101)
+  funcionalidades     Json      @default("{}") // feature flags por tenant (db/101)
   criadoEm            DateTime  @default(now()) @map("criado_em")
   atualizadoEm        DateTime  @updatedAt @map("atualizado_em")
   elevationRequests   ElevationRequest[]

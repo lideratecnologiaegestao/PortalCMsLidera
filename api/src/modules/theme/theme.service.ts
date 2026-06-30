@@ -103,29 +103,47 @@ export class ThemeService {
     tokens: ThemeTokens;
     wcag: WcagReport;
     portal: { nome: string; uf: string };
+    tipo: 'camara' | 'prefeitura';
+    funcionalidades: Record<string, boolean>;
   }> {
     const key = this.cacheKey();
     const cached = await this.cache.get<{
       tokens: ThemeTokens;
       wcag: WcagReport;
       portal: { nome: string; uf: string };
+      tipo: 'camara' | 'prefeitura';
+      funcionalidades: Record<string, boolean>;
     }>(key);
     if (cached) return cached;
 
     const ctx = await this.prisma.db.tenantTheme.findFirst();
     const tokens = ctx ? (ctx.tokens as ThemeTokens) : DEFAULT_TOKENS;
 
-    // Identidade do município (tabela-registro tenants) para o portal público.
+    // Identidade do município + tipo de entidade/feature flags (tabela-registro
+    // tenants) para o portal público e o gating de módulos (câmara × prefeitura).
     const tid = TenantContext.tenantId();
     let portal = { nome: 'Portal do Cidadão', uf: '' };
+    let tipo: 'camara' | 'prefeitura' = 'camara';
+    let funcionalidades: Record<string, boolean> = {};
     if (tid) {
-      const t = await this.prisma
-        .platform()
-        .tenant.findUnique({ where: { id: tid }, select: { nome: true, uf: true } });
-      if (t) portal = { nome: t.nome, uf: t.uf };
+      const t = await this.prisma.platform().tenant.findUnique({
+        where: { id: tid },
+        select: { nome: true, uf: true, tipo: true, funcionalidades: true },
+      });
+      if (t) {
+        portal = { nome: t.nome, uf: t.uf };
+        tipo = (t.tipo as 'camara' | 'prefeitura') ?? 'camara';
+        funcionalidades = (t.funcionalidades as Record<string, boolean>) ?? {};
+      }
     }
 
-    const result = { tokens, wcag: validateThemeColors(tokens.colors), portal };
+    const result = {
+      tokens,
+      wcag: validateThemeColors(tokens.colors),
+      portal,
+      tipo,
+      funcionalidades,
+    };
     await this.cache.set(key, result, TTL_THEME);
     return result;
   }
