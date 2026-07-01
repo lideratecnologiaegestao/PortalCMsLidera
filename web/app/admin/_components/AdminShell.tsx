@@ -216,6 +216,13 @@ function IconBook() {
     </svg>
   );
 }
+function IconCalendar() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V9h14v10zM5 7V5h14v2H5zm2 4h5v5H7z"/>
+    </svg>
+  );
+}
 function IconPhone() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
@@ -268,6 +275,7 @@ const MENU_GROUPS: MenuGroup[] = [
       { href: '/admin/parlamentar', label: 'Parlamentar', icon: <IconPerson />, modulo: 'parlamentar' },
       { href: '/admin/escola', label: 'Escola Legislativa', icon: <IconBook />, modulo: 'escola' },
       { href: '/admin/eventos', label: 'Eventos', icon: <IconList />, modulo: 'eventos' },
+      { href: '/admin/agenda', label: 'Agenda Legislativa', icon: <IconCalendar /> },
       { href: '/admin/sessoes-plenarias', label: 'Sessões Plenárias', icon: <IconTv />, modulo: 'sessoes' },
       { href: '/admin/legislativo', label: 'Legislativo', icon: <IconArticle />, modulo: 'legislativo' },
       { href: '/admin/pss', label: 'Processo Seletivo (PSS)', icon: <IconList />, modulo: 'pss' },
