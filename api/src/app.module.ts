@@ -36,6 +36,7 @@ import { LegislativoModule } from './modules/legislativo/legislativo.module';
 import { EscolaModule } from './modules/escola/escola.module';
 import { PssModule } from './modules/pss/pss.module';
 import { EventosModule } from './modules/eventos/eventos.module';
+import { AgendaModule } from './modules/agenda/agenda.module';
 import { PrefeitoModule } from './modules/prefeito/prefeito.module';
 import { HistoriaModule } from './modules/historia/historia.module';
 import { HinoBrasaoModule } from './modules/hino-brasao/hino-brasao.module';
@@ -117,6 +118,7 @@ import { CampanhasModule } from './modules/campanhas/campanhas.module';
     EscolaModule, // L4 — Escola Legislativa: cursos, provas, certificados (câmara)
     PssModule, // L5 — Processo Seletivo Simplificado: editais, inscrição, ranking (câmara)
     EventosModule, // L6 — eventos & audiências públicas (câmara)
+    AgendaModule, // Agenda Legislativa — calendário unificado (feriados, reuniões, datas comemorativas…)
     PrefeitoModule,    // cadastro do Prefeito(a)/Vice + galeria de ex-prefeitos
     HistoriaModule,    // página "História do Município" (texto rico HTML/MD)
     HinoBrasaoModule,  // página "Hino e Brasão" (letra + mídia + brasões)
