@@ -12,7 +12,7 @@ import { StorageService } from '../storage/storage.service';
  * válido. Ver db/106_escola_legislativa.sql e specs/escola-legislativa.md.
  */
 
-/** Linha de curso_certificados necessária para a renderização. */
+/** Linha de curso_certificados necessária para a renderização (snapshots). */
 export interface CertificadoPdfInput {
   codigo: string;
   nomeAluno: string;
@@ -20,17 +20,31 @@ export interface CertificadoPdfInput {
   cargaHoraria: number | null;
   templateId: string | null;
   emitidoEm: Date;
+  dataInicio?: Date | null;
+  dataConclusao?: Date | null;
+  conteudoProgramatico?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
 }
 
-/** Template carregado via prisma include (textos/elementos/fotos). */
-export interface CertificadoTemplate {
-  largura: number;
-  altura: number;
+/** Uma página do template: fundo próprio + itens (dimensão é global do template). */
+export interface TemplatePagina {
   fundoUrl: string | null;
   fundoStorageKey: string | null;
+  ordem: number | null;
   textos: TemplateTexto[];
   elementos: TemplateElemento[];
   fotos: TemplateFoto[];
+}
+
+/** Template carregado via prisma include (paginas → textos/elementos/fotos). */
+export interface CertificadoTemplate {
+  largura: number;
+  altura: number;
+  // fundo legado/default do template (usado na 1ª página quando a página não tem fundo próprio)
+  fundoUrl: string | null;
+  fundoStorageKey: string | null;
+  paginas: TemplatePagina[];
 }
 export interface TemplateTexto {
   conteudo: string;
@@ -82,6 +96,13 @@ function dataBR(d: Date): string {
   return `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}/${dt.getUTCFullYear()}`;
 }
 
+/** Máscara 000.000.000-00 quando há 11 dígitos; senão devolve o valor bruto. */
+function mascararCpf(cpf?: string | null): string {
+  const d = (cpf ?? '').replace(/\D/g, '');
+  if (d.length !== 11) return (cpf ?? '').trim();
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
 /** pdfkit embute apenas as 14 fontes-padrão; mapeia qualquer fonte p/ Helvetica. */
 function fontePadrao(negrito: boolean): string {
   return negrito ? 'Helvetica-Bold' : 'Helvetica';
@@ -118,31 +139,41 @@ export class CertificadoPdfService {
     doc.on('data', (c: Buffer) => chunks.push(c));
     const fim = new Promise<void>((resolve) => doc.on('end', () => resolve()));
 
-    // Template "vazio" (sem fundo nem itens) é tratado como ausente → layout padrão,
+    const paginas = template?.paginas ?? [];
+    // Template "vazio" (sem fundo nem itens em nenhuma página) → layout padrão,
     // evitando um certificado em branco.
     const temConteudo = !!(
       template &&
       (template.fundoStorageKey ||
         template.fundoUrl ||
-        template.textos?.length ||
-        template.elementos?.length ||
-        template.fotos?.length)
+        paginas.some(
+          (p) => p.fundoUrl || p.fundoStorageKey || p.textos?.length || p.elementos?.length || p.fotos?.length,
+        ))
     );
 
-    // ---- Fundo (cobre a página inteira) ----
     if (temConteudo) {
-      const fundo = await this.carregarImagem(template!.fundoStorageKey, template!.fundoUrl);
-      if (fundo) {
-        try {
-          doc.image(fundo, 0, 0, { width: largura, height: altura });
-        } catch {
-          // imagem corrompida/formato inesperado — segue sem fundo
-        }
-      }
-    }
+      // Dimensão é global; cada página tem seu fundo + itens. addPage() a partir da 2ª.
+      const total = Math.max(1, paginas.length);
+      for (let i = 0; i < total; i++) {
+        const pg = paginas[i];
+        if (i > 0) doc.addPage({ size: [largura, altura], margin: 0 });
 
-    if (temConteudo) {
-      await this.renderizarTemplate(doc, template!, cert, urlValidacao);
+        // Fundo da página. O fallback ao fundo legado do template só vale quando
+        // NÃO há linha de página (pré-backfill); uma página com fundo nulo é
+        // respeitada como "sem fundo" (não reexibe o legado).
+        const fundoKey = pg ? pg.fundoStorageKey : i === 0 ? template!.fundoStorageKey : null;
+        const fundoUrl = pg ? pg.fundoUrl : i === 0 ? template!.fundoUrl : null;
+        const fundo = await this.carregarImagem(fundoKey, fundoUrl);
+        if (fundo) {
+          try {
+            doc.image(fundo, 0, 0, { width: largura, height: altura });
+          } catch {
+            // imagem corrompida/formato inesperado — segue sem fundo
+          }
+        }
+
+        if (pg) await this.renderizarPagina(doc, pg, cert, urlValidacao, i + 1, total);
+      }
     } else {
       await this.renderizarPadrao(doc, cert, urlValidacao, largura, altura);
     }
@@ -152,12 +183,14 @@ export class CertificadoPdfService {
     return Buffer.concat(chunks);
   }
 
-  // ===================================================== render por template
-  private async renderizarTemplate(
+  // ===================================================== render de UMA página
+  private async renderizarPagina(
     doc: PDFKit.PDFDocument,
-    template: CertificadoTemplate,
+    template: TemplatePagina,
     cert: CertificadoPdfInput,
     urlValidacao: string,
+    numeroPagina: number,
+    totalPaginas: number,
   ): Promise<void> {
     // Fotos primeiro (logo/assinatura digitalizada ficam sob os textos).
     const fotos = [...template.fotos].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
@@ -208,7 +241,7 @@ export class CertificadoPdfService {
     // Textos (com placeholders substituídos), na ordem definida.
     const textos = [...template.textos].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
     for (const t of textos) {
-      const conteudo = this.aplicarPlaceholders(t.conteudo, cert);
+      const conteudo = this.aplicarPlaceholders(t.conteudo, cert, numeroPagina, totalPaginas);
       const align = (['left', 'center', 'right'].includes(t.alinhamento ?? '')
         ? t.alinhamento
         : 'left') as 'left' | 'center' | 'right';
@@ -273,15 +306,36 @@ export class CertificadoPdfService {
   }
 
   // ===================================================== helpers
-  /** Substitui {{nome}}{{curso}}{{carga}}{{data}}{{codigo}} no texto do template. */
-  private aplicarPlaceholders(texto: string, cert: CertificadoPdfInput): string {
+  /**
+   * Substitui os placeholders do template. Identidade (nome/cpf/rg) vem do
+   * snapshot do cadastro de cidadão gravado na emissão. {{pagina}}/{{total_paginas}}
+   * são resolvidos no loop de páginas.
+   * Suportados: {{nome}} {{curso}} {{carga}} {{data}} {{codigo}} {{data_inicio}}
+   * {{data_conclusao}} {{conteudo}} {{cpf}} {{rg}} {{pagina}} {{total_paginas}}
+   */
+  private aplicarPlaceholders(
+    texto: string,
+    cert: CertificadoPdfInput,
+    numeroPagina = 1,
+    totalPaginas = 1,
+  ): string {
     const carga = cert.cargaHoraria ? `${cert.cargaHoraria}h` : '';
-    return (texto || '')
-      .replace(/\{\{\s*nome\s*\}\}/gi, cert.nomeAluno)
-      .replace(/\{\{\s*curso\s*\}\}/gi, cert.tituloCurso)
-      .replace(/\{\{\s*carga\s*\}\}/gi, carga)
-      .replace(/\{\{\s*data\s*\}\}/gi, dataBR(cert.emitidoEm))
-      .replace(/\{\{\s*codigo\s*\}\}/gi, cert.codigo);
+    const rep = (s: string, chave: string, valor: string) =>
+      s.replace(new RegExp(`\\{\\{\\s*${chave}\\s*\\}\\}`, 'gi'), valor);
+    let out = texto || '';
+    out = rep(out, 'nome', cert.nomeAluno);
+    out = rep(out, 'curso', cert.tituloCurso);
+    out = rep(out, 'carga', carga);
+    out = rep(out, 'data', dataBR(cert.emitidoEm));
+    out = rep(out, 'codigo', cert.codigo);
+    out = rep(out, 'data_inicio', cert.dataInicio ? dataBR(cert.dataInicio) : '');
+    out = rep(out, 'data_conclusao', cert.dataConclusao ? dataBR(cert.dataConclusao) : '');
+    out = rep(out, 'conteudo', (cert.conteudoProgramatico ?? '').trim());
+    out = rep(out, 'cpf', mascararCpf(cert.cpf));
+    out = rep(out, 'rg', (cert.rg ?? '').trim());
+    out = rep(out, 'pagina', String(numeroPagina));
+    out = rep(out, 'total_paginas', String(totalPaginas));
+    return out;
   }
 
   /** Lê imagem do storage (storageKey) ou de URL absoluta; null se ausente/erro. */

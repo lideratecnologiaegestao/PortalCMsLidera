@@ -40,6 +40,7 @@ interface FormCurso {
   slug: string;
   resumo: string;
   descricao: string;
+  conteudoProgramatico: string;
   capaUrl: string;
   cargaHoraria: number | '';
   inicioEm: string;
@@ -58,6 +59,7 @@ function formVazio(): FormCurso {
     slug: '',
     resumo: '',
     descricao: '',
+    conteudoProgramatico: '',
     capaUrl: '',
     cargaHoraria: '',
     inicioEm: '',
@@ -99,6 +101,7 @@ function ModalCurso({
             slug: editando.slug ?? '',
             resumo: editando.resumo ?? '',
             descricao: editando.descricao ?? '',
+            conteudoProgramatico: editando.conteudoProgramatico ?? '',
             capaUrl: editando.capaUrl ?? '',
             cargaHoraria: editando.cargaHoraria ?? '',
             inicioEm: toDateInput(editando.inicioEm),
@@ -127,6 +130,7 @@ function ModalCurso({
       slug: form.slug || undefined,
       resumo: form.resumo || undefined,
       descricao: form.descricao || undefined,
+      conteudoProgramatico: form.conteudoProgramatico || undefined,
       capaUrl: form.capaUrl || undefined,
       cargaHoraria: form.cargaHoraria === '' ? undefined : Number(form.cargaHoraria),
       inicioEm: form.inicioEm || undefined,
@@ -209,6 +213,20 @@ function ModalCurso({
             value={form.descricao}
             onChange={(e) => s('descricao', e.target.value)}
             placeholder="<p>Ementa, público-alvo, objetivos…</p>"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="curso-conteudo" className={ui.label}>
+            Conteúdo programático <span className="text-fg/50">(sai no certificado via {'{{conteudo}}'})</span>
+          </label>
+          <textarea
+            id="curso-conteudo"
+            rows={4}
+            className={ui.input}
+            value={form.conteudoProgramatico}
+            onChange={(e) => s('conteudoProgramatico', e.target.value)}
+            placeholder="Tópicos/ementa do curso (uma linha por item)."
           />
         </div>
 

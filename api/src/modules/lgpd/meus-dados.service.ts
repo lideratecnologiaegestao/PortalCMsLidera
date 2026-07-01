@@ -33,6 +33,8 @@ export class MeusDadosService {
         id: true,
         nome: true,
         email: true,
+        cpf: true, // dado do próprio titular (portabilidade LGPD art. 18)
+        rg: true,
         telefone: true,
         govbrNivel: true,
         ultimoLoginEm: true,
@@ -47,6 +49,8 @@ export class MeusDadosService {
           id: user.id,
           nome: user.nome,
           email: user.email,
+          cpf: user.cpf ?? null,
+          rg: user.rg ?? null,
           telefone: user.telefone ?? null,
           govbrNivel: user.govbrNivel ?? null,
           ultimoLoginEm: user.ultimoLoginEm ?? null,

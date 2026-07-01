@@ -18,6 +18,7 @@ export class CriarCursoDto {
   @IsString() @IsOptional() slug?: string;
   @IsString() @IsOptional() resumo?: string;
   @IsString() @IsOptional() descricao?: string;
+  @IsString() @IsOptional() conteudoProgramatico?: string;
   @IsString() @IsOptional() capaUrl?: string;
   @IsString() @IsOptional() capaStorageKey?: string;
   @IsInt() @IsOptional() cargaHoraria?: number;
@@ -155,6 +156,15 @@ export class FotoTemplateDto {
   @IsNumber() @IsOptional() altura?: number;
   @IsInt() @IsOptional() ordem?: number;
 }
+/** Uma página do certificado: fundo próprio + itens. Dimensão é global do template. */
+export class PaginaTemplateDto {
+  @IsString() @IsOptional() fundoUrl?: string;
+  @IsString() @IsOptional() fundoStorageKey?: string;
+  @IsInt() @IsOptional() ordem?: number;
+  @IsArray() @IsOptional() textos?: TextoTemplateDto[];
+  @IsArray() @IsOptional() elementos?: ElementoTemplateDto[];
+  @IsArray() @IsOptional() fotos?: FotoTemplateDto[];
+}
 export class CriarTemplateDto {
   @IsString() @IsNotEmpty() nome!: string;
   @IsString() @IsOptional() typeId?: string;
@@ -165,6 +175,9 @@ export class CriarTemplateDto {
   @IsString() @IsOptional() orientacao?: string; // paisagem|retrato
   @IsBoolean() @IsOptional() padrao?: boolean;
   @IsBoolean() @IsOptional() ativo?: boolean;
+  // Multipágina: `paginas` tem precedência. Se ausente, os arrays flat abaixo
+  // são tratados como uma única página (compatibilidade).
+  @IsArray() @IsOptional() paginas?: PaginaTemplateDto[];
   @IsArray() @IsOptional() textos?: TextoTemplateDto[];
   @IsArray() @IsOptional() elementos?: ElementoTemplateDto[];
   @IsArray() @IsOptional() fotos?: FotoTemplateDto[];

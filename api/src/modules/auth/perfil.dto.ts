@@ -26,6 +26,16 @@ export class AtualizarPerfilDto {
   email?: string;
 
   @IsOptional()
+  @IsString({ message: 'CPF deve ser uma string.' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  cpf?: string;
+
+  @IsOptional()
+  @IsString({ message: 'RG deve ser uma string.' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  rg?: string;
+
+  @IsOptional()
   @IsString({ message: 'Senha atual deve ser uma string.' })
   senhaAtual?: string;
 
