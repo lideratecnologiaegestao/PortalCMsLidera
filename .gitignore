@@ -74,3 +74,8 @@ crash.log
 # Python bytecode (portfolio)
 __pycache__/
 *.pyc
+
+# Certificados digitais (.pfx/.p12 + senha) — NUNCA versionar chave privada
+certificado/
+*.pfx
+*.p12
