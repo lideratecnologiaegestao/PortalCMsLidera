@@ -13,6 +13,7 @@ export interface CursoAdmin {
   slug?: string | null;
   resumo?: string | null;
   descricao?: string | null;
+  conteudoProgramatico?: string | null;
   capaUrl?: string | null;
   capaStorageKey?: string | null;
   cargaHoraria?: number | null;
@@ -140,6 +141,17 @@ export interface TemplateFotoAdmin {
   ordem: number;
 }
 
+/** Página do template (multipágina): fundo próprio + itens. */
+export interface TemplatePaginaAdmin {
+  id?: string;
+  ordem?: number;
+  fundoUrl?: string | null;
+  fundoStorageKey?: string | null;
+  textos?: TemplateTextoAdmin[];
+  elementos?: TemplateElementoAdmin[];
+  fotos?: TemplateFotoAdmin[];
+}
+
 export interface TemplateAdmin {
   id: string;
   typeId?: string | null;
@@ -151,6 +163,8 @@ export interface TemplateAdmin {
   orientacao: string; // paisagem | retrato
   padrao: boolean;
   ativo: boolean;
+  // Multipágina: cada página tem fundo + itens. (Legado: textos/elementos/fotos flat.)
+  paginas?: TemplatePaginaAdmin[];
   textos?: TemplateTextoAdmin[];
   elementos?: TemplateElementoAdmin[];
   fotos?: TemplateFotoAdmin[];

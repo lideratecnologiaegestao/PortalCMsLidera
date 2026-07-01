@@ -18,6 +18,7 @@ import {
   CriarTemplateDto,
   DuvidaDto,
   FeedbackDto,
+  PaginaTemplateDto,
   RespostaDuvidaDto,
   SubmeterProvaDto,
   TipoCertificadoDto,
@@ -138,6 +139,7 @@ export class EscolaService {
     const c = await this.prisma.db.curso.create({
       data: {
         tenantId, titulo: dto.titulo, slug, resumo: dto.resumo, descricao: dto.descricao,
+        conteudoProgramatico: dto.conteudoProgramatico,
         capaUrl: dto.capaUrl, capaStorageKey: dto.capaStorageKey, cargaHoraria: dto.cargaHoraria,
         inicioEm: dateOrNull(dto.inicioEm), fimEm: dateOrNull(dto.fimEm),
         certificacao: dto.certificacao ?? true, notaMinima: dto.notaMinima ?? 70,
@@ -153,8 +155,8 @@ export class EscolaService {
     const tenantId = TenantContext.tenantId()!;
     const anterior = await this.buscarCurso(id);
     const data: Record<string, unknown> = {};
-    for (const c of ['titulo', 'resumo', 'descricao', 'capaUrl', 'capaStorageKey', 'cargaHoraria',
-      'certificacao', 'notaMinima', 'templateId', 'status', 'publicado', 'ordem'] as const) {
+    for (const c of ['titulo', 'resumo', 'descricao', 'conteudoProgramatico', 'capaUrl', 'capaStorageKey',
+      'cargaHoraria', 'certificacao', 'notaMinima', 'templateId', 'status', 'publicado', 'ordem'] as const) {
       if ((dto as any)[c] !== undefined) (data as any)[c] = (dto as any)[c];
     }
     if (dto.inicioEm !== undefined) data.inicioEm = dateOrNull(dto.inicioEm);
@@ -490,30 +492,47 @@ export class EscolaService {
     const tenantId = TenantContext.tenantId()!;
     const curso = await this.prisma.db.curso.findUnique({
       where: { id: cursoId },
-      select: { id: true, titulo: true, cargaHoraria: true, certificacao: true, templateId: true },
+      select: {
+        id: true, titulo: true, cargaHoraria: true, certificacao: true, templateId: true,
+        inicioEm: true, fimEm: true, conteudoProgramatico: true,
+      },
     });
     if (!curso || !curso.certificacao) return null;
 
     const ja = await this.prisma.db.cursoCertificado.findFirst({ where: { cursoId, userId } });
     if (ja) return ja;
 
-    const user = await this.prisma.db.user.findUnique({ where: { id: userId }, select: { nome: true } });
+    // Identidade vem do CADASTRO DE CIDADÃO (users): nome/CPF/RG.
+    const user = await this.prisma.db.user.findUnique({
+      where: { id: userId },
+      select: { nome: true, cpf: true, rg: true },
+    });
     const inscricao = await this.prisma.db.cursoInscricao.findFirst({ where: { cursoId, userId } });
 
     const codigo = await this.codigoUnicoCertificado();
+    // A emissão automática ocorre no momento em que o aluno concluiu → `agora` é a
+    // data real de conclusão (a inscrição.concluidoEm ainda é null aqui; ela é
+    // gravada logo abaixo). Prioriza a conclusão do aluno, cai p/ fim do curso.
+    const agora = new Date();
     const cert = await this.prisma.db.cursoCertificado.create({
       data: {
         tenantId, cursoId, userId, inscricaoId: inscricao?.id ?? null,
         templateId: curso.templateId || null, codigo,
         nomeAluno: user?.nome ?? 'Aluno', tituloCurso: curso.titulo,
         cargaHoraria: curso.cargaHoraria ?? null,
+        // snapshots imutáveis na emissão (fonte: curso + inscrição + cidadão)
+        dataInicio: curso.inicioEm ?? null,
+        dataConclusao: inscricao?.concluidoEm ?? curso.fimEm ?? agora,
+        conteudoProgramatico: curso.conteudoProgramatico ?? null,
+        cpf: user?.cpf ?? null,
+        rg: user?.rg ?? null,
         // pdf_url/qr_url ficam null: geração assíncrona/on-demand (ver spec §4).
       },
     });
     if (inscricao) {
       await this.prisma.db.cursoInscricao.update({
         where: { id: inscricao.id },
-        data: { status: 'concluida', aprovado: true, progresso: 100, concluidoEm: new Date() },
+        data: { status: 'concluida', aprovado: true, progresso: 100, concluidoEm: agora },
       });
     }
     await this.audit(tenantId, userId, 'CERTIFICADO_EMITIDO', 'curso_certificados', cert.id, { codigo, cursoId });
@@ -521,8 +540,14 @@ export class EscolaService {
   }
 
   async meusCertificados(userId: string) {
+    // Minimização: a listagem não precisa de cpf/rg/conteúdo (só o PDF usa).
     return this.prisma.db.cursoCertificado.findMany({
-      where: { userId }, orderBy: { emitidoEm: 'desc' },
+      where: { userId },
+      orderBy: { emitidoEm: 'desc' },
+      select: {
+        id: true, codigo: true, nomeAluno: true, tituloCurso: true, cargaHoraria: true,
+        emitidoEm: true, dataInicio: true, dataConclusao: true, pdfStorageKey: true, qrUrl: true,
+      },
     });
   }
 
@@ -544,11 +569,11 @@ export class EscolaService {
       return { buffer, filename };
     }
 
-    // Carrega o template (com layout aninhado) quando houver; senão usa padrão.
+    // Carrega o template com páginas (layout aninhado) quando houver; senão usa padrão.
     const template = cert.templateId
       ? await this.prisma.db.certificateTemplate.findUnique({
           where: { id: cert.templateId },
-          include: { textos: true, elementos: true, fotos: true },
+          include: this.templateInclude,
         })
       : null;
 
@@ -562,6 +587,11 @@ export class EscolaService {
         cargaHoraria: cert.cargaHoraria,
         templateId: cert.templateId,
         emitidoEm: cert.emitidoEm,
+        dataInicio: cert.dataInicio,
+        dataConclusao: cert.dataConclusao,
+        conteudoProgramatico: cert.conteudoProgramatico,
+        cpf: cert.cpf,
+        rg: cert.rg,
       },
       template as any,
       urlValidacao,
@@ -647,43 +677,92 @@ export class EscolaService {
   }
 
   // ===================================================== Templates (admin)
+  /** include padrão: páginas ordenadas, cada uma com seus itens ordenados. */
+  private readonly templateInclude = {
+    paginas: {
+      orderBy: { ordem: 'asc' },
+      include: {
+        textos: { orderBy: { ordem: 'asc' } },
+        elementos: { orderBy: { ordem: 'asc' } },
+        fotos: { orderBy: { ordem: 'asc' } },
+      },
+    },
+    // Relações flat (mesmas linhas via templateId): mantêm compatibilidade com o
+    // editor simplificado e as contagens da lista (Certificados.tsx), que leem
+    // template.textos/elementos/fotos. O designer visual usa `paginas`.
+    textos: { orderBy: { ordem: 'asc' } },
+    elementos: { orderBy: { ordem: 'asc' } },
+    fotos: { orderBy: { ordem: 'asc' } },
+  } as any;
+
   listarTemplates() {
     return this.prisma.db.certificateTemplate.findMany({
       orderBy: { criadoEm: 'desc' },
-      include: { textos: true, elementos: true, fotos: true },
+      include: this.templateInclude,
     });
   }
+
+  /** Normaliza o DTO em ≥1 página. Sem `paginas`, os arrays flat viram 1 página. */
+  private paginasDoDto(dto: CriarTemplateDto | AtualizarTemplateDto): PaginaTemplateDto[] {
+    if (dto.paginas?.length) return dto.paginas;
+    if (dto.textos?.length || dto.elementos?.length || dto.fotos?.length) {
+      return [{ fundoUrl: dto.fundoUrl, fundoStorageKey: dto.fundoStorageKey,
+                textos: dto.textos, elementos: dto.elementos, fotos: dto.fotos }];
+    }
+    return [{ fundoUrl: dto.fundoUrl, fundoStorageKey: dto.fundoStorageKey }];
+  }
+
+  /** Nested write `paginas: { deleteMany, create }` — REPLACE atômico das páginas + itens. */
+  private nestedPaginas(paginas: PaginaTemplateDto[], tenantId: string, templateId: string) {
+    return {
+      deleteMany: {},
+      create: paginas.map((pg, i) => ({
+        tenantId,
+        ordem: pg.ordem ?? i,
+        fundoUrl: pg.fundoUrl ?? null,
+        fundoStorageKey: pg.fundoStorageKey ?? null,
+        textos: {
+          create: (pg.textos ?? []).map((t) => ({
+            tenantId, templateId, conteudo: t.conteudo, posX: t.posX ?? 0, posY: t.posY ?? 0,
+            largura: t.largura, fonte: t.fonte || 'Helvetica', tamanho: t.tamanho ?? 16,
+            cor: t.cor || '#000000', alinhamento: t.alinhamento || 'center',
+            negrito: t.negrito ?? false, ordem: t.ordem ?? 0,
+          })),
+        },
+        elementos: {
+          create: (pg.elementos ?? []).map((e) => ({
+            tenantId, templateId, tipo: e.tipo || 'qr', posX: e.posX ?? 0, posY: e.posY ?? 0,
+            largura: e.largura, altura: e.altura, config: e.config ?? {}, ordem: e.ordem ?? 0,
+          })),
+        },
+        fotos: {
+          create: (pg.fotos ?? []).map((f) => ({
+            tenantId, templateId, url: f.url, storageKey: f.storageKey, posX: f.posX ?? 0,
+            posY: f.posY ?? 0, largura: f.largura, altura: f.altura, ordem: f.ordem ?? 0,
+          })),
+        },
+      })),
+    };
+  }
+
   async criarTemplate(dto: CriarTemplateDto) {
     const tenantId = TenantContext.tenantId()!;
-    return this.prisma.db.certificateTemplate.create({
+    // Cria o template vazio e reaproveita o REPLACE atômico de páginas (já sabe o id).
+    const tpl = await this.prisma.db.certificateTemplate.create({
       data: {
         tenantId, typeId: dto.typeId || null, nome: dto.nome,
         fundoUrl: dto.fundoUrl, fundoStorageKey: dto.fundoStorageKey,
         largura: dto.largura ?? 842, altura: dto.altura ?? 595,
         orientacao: dto.orientacao || 'paisagem', padrao: dto.padrao ?? false, ativo: dto.ativo ?? true,
-        textos: dto.textos?.length
-          ? { create: dto.textos.map((t) => ({
-              tenantId, conteudo: t.conteudo, posX: t.posX ?? 0, posY: t.posY ?? 0, largura: t.largura,
-              fonte: t.fonte || 'Helvetica', tamanho: t.tamanho ?? 16, cor: t.cor || '#000000',
-              alinhamento: t.alinhamento || 'center', negrito: t.negrito ?? false, ordem: t.ordem ?? 0,
-            })) }
-          : undefined,
-        elementos: dto.elementos?.length
-          ? { create: dto.elementos.map((e) => ({
-              tenantId, tipo: e.tipo || 'qr', posX: e.posX ?? 0, posY: e.posY ?? 0,
-              largura: e.largura, altura: e.altura, config: e.config ?? {}, ordem: e.ordem ?? 0,
-            })) }
-          : undefined,
-        fotos: dto.fotos?.length
-          ? { create: dto.fotos.map((f) => ({
-              tenantId, url: f.url, storageKey: f.storageKey, posX: f.posX ?? 0, posY: f.posY ?? 0,
-              largura: f.largura, altura: f.altura, ordem: f.ordem ?? 0,
-            })) }
-          : undefined,
       },
-      include: { textos: true, elementos: true, fotos: true },
+    });
+    return this.prisma.db.certificateTemplate.update({
+      where: { id: tpl.id },
+      data: { paginas: this.nestedPaginas(this.paginasDoDto(dto), tenantId, tpl.id) } as any,
+      include: this.templateInclude,
     });
   }
+
   async atualizarTemplate(id: string, dto: AtualizarTemplateDto) {
     const tenantId = TenantContext.tenantId()!;
     const data: Record<string, unknown> = {};
@@ -692,42 +771,36 @@ export class EscolaService {
       if ((dto as any)[c] !== undefined) (data as any)[c] = (dto as any)[c];
     }
     data.atualizadoEm = new Date();
-    // Layout aninhado: REPLACE atômico (apaga existentes e recria). Só toca nos
-    // arrays que vierem definidos (undefined = não mexer) — mesmo padrão de
-    // secretariaEvento ({ deleteMany: {}, create: [...] }) e de criarTemplate.
-    if (dto.textos !== undefined) {
-      data.textos = {
-        deleteMany: {},
-        create: dto.textos.map((t) => ({
-          tenantId, conteudo: t.conteudo, posX: t.posX ?? 0, posY: t.posY ?? 0, largura: t.largura,
-          fonte: t.fonte || 'Helvetica', tamanho: t.tamanho ?? 16, cor: t.cor || '#000000',
-          alinhamento: t.alinhamento || 'center', negrito: t.negrito ?? false, ordem: t.ordem ?? 0,
-        })),
-      };
+    // Só toca nas páginas quando algo de layout veio (paginas OU arrays flat).
+    // undefined em tudo = não mexe no layout (ex.: renomear/definir padrão).
+    const mexeuLayout =
+      dto.paginas !== undefined || dto.textos !== undefined ||
+      dto.elementos !== undefined || dto.fotos !== undefined;
+    if (mexeuLayout) {
+      const paginas = this.paginasDoDto(dto);
+      data.paginas = this.nestedPaginas(paginas, tenantId, id);
+      // O fundo é por página agora: mantém o escalar legado coerente com a 1ª
+      // página e zera o storage-key legado (senão o PDF reexibiria o fundo antigo).
+      data.fundoUrl = paginas[0]?.fundoUrl ?? null;
+      data.fundoStorageKey = null;
     }
-    if (dto.elementos !== undefined) {
-      data.elementos = {
-        deleteMany: {},
-        create: dto.elementos.map((e) => ({
-          tenantId, tipo: e.tipo || 'qr', posX: e.posX ?? 0, posY: e.posY ?? 0,
-          largura: e.largura, altura: e.altura, config: e.config ?? {}, ordem: e.ordem ?? 0,
-        })),
-      };
-    }
-    if (dto.fotos !== undefined) {
-      data.fotos = {
-        deleteMany: {},
-        create: dto.fotos.map((f) => ({
-          tenantId, url: f.url, storageKey: f.storageKey, posX: f.posX ?? 0, posY: f.posY ?? 0,
-          largura: f.largura, altura: f.altura, ordem: f.ordem ?? 0,
-        })),
-      };
-    }
-    return this.prisma.db.certificateTemplate.update({
+    const tpl = await this.prisma.db.certificateTemplate.update({
       where: { id },
       data: data as any,
-      include: { textos: true, elementos: true, fotos: true },
+      include: this.templateInclude,
     });
+    // Editor simplificado (metadados, sem layout): propaga a troca de fundo à
+    // página 0, senão ficaria só no escalar legado e não apareceria no PDF.
+    if (!mexeuLayout && dto.fundoUrl !== undefined) {
+      await this.prisma.db.certificatePage.updateMany({
+        where: { templateId: id, ordem: 0 },
+        data: { fundoUrl: dto.fundoUrl || null, fundoStorageKey: dto.fundoStorageKey ?? null },
+      });
+      return this.prisma.db.certificateTemplate.findUnique({
+        where: { id }, include: this.templateInclude,
+      });
+    }
+    return tpl;
   }
   excluirTemplate(id: string) {
     return this.prisma.db.certificateTemplate.delete({ where: { id } }).then(() => ({ excluido: true }));

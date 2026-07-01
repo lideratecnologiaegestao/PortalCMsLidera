@@ -40,6 +40,8 @@ interface Perfil {
   id: string;
   nome: string;
   email: string;
+  cpf: string | null;
+  rg: string | null;
   role: string;
   mfaHabilitado: boolean;
   govbrNivel: number | null;
@@ -68,6 +70,8 @@ export default function PerfilPage() {
   // Campos editaveis
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [rg, setRg] = useState('');
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
 
@@ -84,6 +88,8 @@ export default function PerfilPage() {
         setPerfil(data);
         setNome(data.nome);
         setEmail(data.email);
+        setCpf(data.cpf ?? '');
+        setRg(data.rg ?? '');
       })
       .catch((e) => setErroCarregar(e instanceof Error ? e.message : String(e)))
       .finally(() => setCarregando(false));
@@ -97,6 +103,8 @@ export default function PerfilPage() {
     const body: Record<string, string> = {};
     if (nome !== perfil?.nome) body.nome = nome;
     if (email !== perfil?.email) body.email = email;
+    if (cpf !== (perfil?.cpf ?? '')) body.cpf = cpf;
+    if (rg !== (perfil?.rg ?? '')) body.rg = rg;
     if (senhaAtual) body.senhaAtual = senhaAtual;
     if (novaSenha) body.novaSenha = novaSenha;
 
@@ -115,6 +123,8 @@ export default function PerfilPage() {
       setPerfil(atualizado);
       setNome(atualizado.nome);
       setEmail(atualizado.email);
+      setCpf(atualizado.cpf ?? '');
+      setRg(atualizado.rg ?? '');
       setSenhaAtual('');
       setNovaSenha('');
       setFeedback({ tipo: 'sucesso', msg: 'Perfil atualizado com sucesso.' });
@@ -228,6 +238,41 @@ export default function PerfilPage() {
               className="w-full rounded border border-border bg-bg px-3 py-2 text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             />
           </div>
+
+          {/* Identidade — usada em certificados e inscrições (cursos, eventos, seletivos, concursos). */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="perfil-cpf" className="mb-1 block text-sm font-medium text-fg">
+                CPF
+              </label>
+              <input
+                id="perfil-cpf"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
+                placeholder="000.000.000-00"
+                className="w-full rounded border border-border bg-bg px-3 py-2 text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              />
+            </div>
+            <div>
+              <label htmlFor="perfil-rg" className="mb-1 block text-sm font-medium text-fg">
+                RG
+              </label>
+              <input
+                id="perfil-rg"
+                type="text"
+                autoComplete="off"
+                value={rg}
+                onChange={(e) => setRg(e.target.value)}
+                className="w-full rounded border border-border bg-bg px-3 py-2 text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-fg/55">
+            CPF e RG ficam no seu cadastro e são usados nos certificados e inscrições.
+          </p>
         </div>
 
         <fieldset className="rounded border border-border p-4 space-y-4">

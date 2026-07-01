@@ -299,6 +299,8 @@ export class SolicitacoesService {
           nome: '[TITULAR ANONIMIZADO]',
           email: emailAnonimizado,
           telefone: null,
+          cpf: null,
+          rg: null,
           cpfHash: null,
           govbrSub: null,
           govbrNivel: null,
@@ -306,7 +308,7 @@ export class SolicitacoesService {
           ativo: false,
         },
       });
-      camposAnonimizados.push('nome', 'email', 'telefone', 'cpf_hash', 'govbr_sub', 'govbr_nivel', 'avatar_storage_key', 'ativo');
+      camposAnonimizados.push('nome', 'email', 'telefone', 'cpf', 'rg', 'cpf_hash', 'govbr_sub', 'govbr_nivel', 'avatar_storage_key', 'ativo');
 
       // 2. Limpa user_contatos (sem guarda obrigatória própria)
       await tx.userContato.updateMany({

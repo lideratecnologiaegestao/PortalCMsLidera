@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
 import { hashSenha, verificarSenha } from './password';
+import { computarCpfHash } from './cpf-hash';
 import { AtualizarPerfilDto } from './perfil.dto';
 
 /** Shape retornado pelo GET e pelo PATCH bem-sucedido. */
@@ -15,6 +16,8 @@ export interface PerfilResponse {
   id: string;
   nome: string;
   email: string;
+  cpf: string | null;
+  rg: string | null;
   role: string;
   mfaHabilitado: boolean;
   govbrNivel: number | null;
@@ -40,6 +43,8 @@ export class PerfilService {
         id: true,
         nome: true,
         email: true,
+        cpf: true,
+        rg: true,
         role: true,
         mfaHabilitado: true,
         govbrNivel: true,
@@ -55,6 +60,8 @@ export class PerfilService {
       id: user.id,
       nome: user.nome,
       email: user.email,
+      cpf: user.cpf ?? null,
+      rg: user.rg ?? null,
       role: user.role as string,
       mfaHabilitado: user.mfaHabilitado,
       govbrNivel: user.govbrNivel ?? null,
@@ -80,6 +87,8 @@ export class PerfilService {
         id: true,
         nome: true,
         email: true,
+        cpf: true,
+        rg: true,
         role: true,
         mfaHabilitado: true,
         govbrNivel: true,
@@ -117,6 +126,21 @@ export class PerfilService {
       camposAlterados.push('email');
     }
 
+    // Cadastro de cidadão: CPF/RG ('' limpa). Fonte de identidade p/ certificados/inscrições.
+    // Guarda o CPF só em dígitos e mantém cpf_hash sincronizado (dedup coerente).
+    if (dto.cpf !== undefined) {
+      const novoCpf = (dto.cpf ?? '').replace(/\D/g, '') || null;
+      if (novoCpf !== (user.cpf ?? null)) {
+        data.cpf = novoCpf;
+        data.cpfHash = computarCpfHash(novoCpf);
+        camposAlterados.push('cpf');
+      }
+    }
+    if (dto.rg !== undefined && (dto.rg || null) !== (user.rg ?? null)) {
+      data.rg = dto.rg || null;
+      camposAlterados.push('rg');
+    }
+
     if (dto.novaSenha !== undefined && dto.novaSenha !== null) {
       data.senhaHash = hashSenha(dto.novaSenha);
       camposAlterados.push('senha');
@@ -137,6 +161,8 @@ export class PerfilService {
           id: true,
           nome: true,
           email: true,
+          cpf: true,
+          rg: true,
           role: true,
           mfaHabilitado: true,
           govbrNivel: true,
@@ -146,6 +172,8 @@ export class PerfilService {
         id: result.id,
         nome: result.nome,
         email: result.email,
+        cpf: result.cpf ?? null,
+        rg: result.rg ?? null,
         role: result.role as string,
         mfaHabilitado: result.mfaHabilitado,
         govbrNivel: result.govbrNivel ?? null,

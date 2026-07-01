@@ -74,10 +74,17 @@ type Item = ItemTexto | ItemFoto | ItemElemento;
 
 const PLACEHOLDERS = [
   { token: '{{nome}}', label: 'Nome' },
+  { token: '{{cpf}}', label: 'CPF' },
+  { token: '{{rg}}', label: 'RG' },
   { token: '{{curso}}', label: 'Curso' },
+  { token: '{{conteudo}}', label: 'Conteúdo programático' },
   { token: '{{carga}}', label: 'Carga horária' },
-  { token: '{{data}}', label: 'Data' },
+  { token: '{{data_inicio}}', label: 'Data início' },
+  { token: '{{data_conclusao}}', label: 'Data conclusão' },
+  { token: '{{data}}', label: 'Data emissão' },
   { token: '{{codigo}}', label: 'Código' },
+  { token: '{{pagina}}', label: 'Nº da página' },
+  { token: '{{total_paginas}}', label: 'Total de páginas' },
 ];
 
 const FONTES = ['Helvetica', 'Times-Roman', 'Courier'];
@@ -106,8 +113,15 @@ function comoNumero(v: number | null | undefined, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-/** Converte um TemplateAdmin (vindo do GET) na lista de itens do designer. */
-function itensDoTemplate(t: TemplateAdmin): Item[] {
+/** Uma página de trabalho do designer: fundo próprio + itens. */
+interface Pagina {
+  uid: string;
+  fundoUrl: string;
+  itens: Item[];
+}
+
+/** Converte um layout (template legado OU página) na lista de itens do designer. */
+function itensDoLayout(t: Pick<TemplateAdmin, 'textos' | 'elementos' | 'fotos'>): Item[] {
   const textos: Item[] = (t.textos ?? []).map((x) => ({
     uid: novoUid('txt'),
     kind: 'texto',
@@ -148,6 +162,18 @@ function itensDoTemplate(t: TemplateAdmin): Item[] {
   return [...textos, ...fotos, ...elementos];
 }
 
+/** Constrói as páginas de trabalho a partir do template (multipágina, legado ou novo). */
+function paginasDoTemplate(t: TemplateAdmin | null): Pagina[] {
+  if (!t) return [{ uid: novoUid('pg'), fundoUrl: '', itens: [] }];
+  if (t.paginas?.length) {
+    return [...t.paginas]
+      .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+      .map((p) => ({ uid: novoUid('pg'), fundoUrl: p.fundoUrl ?? '', itens: itensDoLayout(p) }));
+  }
+  // Legado (template single-page flat) → uma página.
+  return [{ uid: novoUid('pg'), fundoUrl: t.fundoUrl ?? '', itens: itensDoLayout(t) }];
+}
+
 // ─── Componente ──────────────────────────────────────────────────────────────
 
 const LARGURA_TELA = 760; // px alvo do canvas; escala = LARGURA_TELA / largura(pt)
@@ -165,16 +191,69 @@ export default function CertificadoDesigner({ editando, tipos, onClose, onSalvo 
   // Metadados do template
   const [nome, setNome] = useState(editando?.nome ?? '');
   const [typeId, setTypeId] = useState(editando?.typeId ?? '');
-  const [fundoUrl, setFundoUrl] = useState(editando?.fundoUrl ?? '');
   const [largura, setLargura] = useState(comoNumero(editando?.largura, 842));
   const [altura, setAltura] = useState(comoNumero(editando?.altura, 595));
   const [orientacao, setOrientacao] = useState(editando?.orientacao ?? 'paisagem');
   const [padrao, setPadrao] = useState(editando?.padrao ?? false);
   const [ativo, setAtivo] = useState(editando?.ativo ?? true);
 
-  // Itens do canvas + seleção
-  const [itens, setItens] = useState<Item[]>(() => (editando ? itensDoTemplate(editando) : []));
+  // Páginas (multipágina): cada uma tem seu fundo + itens. `pgAtual` é a página em edição.
+  const [paginas, setPaginas] = useState<Pagina[]>(() => paginasDoTemplate(editando));
+  const [pgAtual, setPgAtual] = useState(0);
   const [selId, setSelId] = useState<string | null>(null);
+
+  // Ref sempre com a página atual — closures estáveis (drag) apontam à página certa.
+  const pgAtualRef = useRef(0);
+  useEffect(() => { pgAtualRef.current = pgAtual; }, [pgAtual]);
+
+  // Página corrente + acessores (mantêm o restante do código praticamente intacto).
+  const itens = paginas[pgAtual]?.itens ?? [];
+  const fundoUrl = paginas[pgAtual]?.fundoUrl ?? '';
+  const setItens = useCallback(
+    (updater: Item[] | ((arr: Item[]) => Item[])) =>
+      setPaginas((ps) =>
+        ps.map((p, i) =>
+          i === pgAtualRef.current
+            ? { ...p, itens: typeof updater === 'function' ? updater(p.itens) : updater }
+            : p,
+        ),
+      ),
+    [],
+  );
+  const setFundoUrl = useCallback(
+    (v: string | ((s: string) => string)) =>
+      setPaginas((ps) =>
+        ps.map((p, i) =>
+          i === pgAtualRef.current
+            ? { ...p, fundoUrl: typeof v === 'function' ? v(p.fundoUrl) : v }
+            : p,
+        ),
+      ),
+    [],
+  );
+
+  // Operações de página.
+  const addPagina = useCallback(() => {
+    setPaginas((ps) => {
+      const arr = [...ps, { uid: novoUid('pg'), fundoUrl: '', itens: [] as Item[] }];
+      setPgAtual(arr.length - 1);
+      return arr;
+    });
+    setSelId(null);
+  }, []);
+  const removerPagina = useCallback((idx: number) => {
+    setPaginas((ps) => {
+      if (ps.length <= 1) return ps; // sempre ≥ 1 página
+      const arr = ps.filter((_, i) => i !== idx);
+      setPgAtual((cur) => Math.max(0, Math.min(cur, arr.length - 1)));
+      return arr;
+    });
+    setSelId(null);
+  }, []);
+  const irParaPagina = useCallback((idx: number) => {
+    setPgAtual(idx);
+    setSelId(null);
+  }, []);
 
   // Pickers de mídia (fundo / foto)
   const [pickerFundo, setPickerFundo] = useState(false);
@@ -308,7 +387,12 @@ export default function CertificadoDesigner({ editando, tipos, onClose, onSalvo 
           if (it.uid !== d.uid) return it;
           // clamp considerando a dimensão do item, p/ não arrastá-lo p/ fora do canvas
           const iw = (it as { largura?: number }).largura ?? 0;
-          const ih = (it as { altura?: number }).altura ?? 0;
+          // Texto não tem `altura`; estima 1 linha (tamanho×1.2) para o clamp
+          // vertical não deixar a caixa sair pela borda inferior.
+          const ih =
+            it.kind === 'texto'
+              ? Math.max((it as ItemTexto).tamanho * 1.2, 12)
+              : (it as { altura?: number }).altura ?? 0;
           const novoX = Math.round(Math.max(0, Math.min(Math.max(0, largura - iw), d.startPosX + dxPt)));
           const novoY = Math.round(Math.max(0, Math.min(Math.max(0, altura - ih), d.startPosY + dyPt)));
           return { ...it, posX: novoX, posY: novoY } as Item;
@@ -363,57 +447,46 @@ export default function CertificadoDesigner({ editando, tipos, onClose, onSalvo 
     setSalvando(true);
     setErro('');
 
-    const textos = itens
-      .filter((i): i is ItemTexto => i.kind === 'texto')
-      .map((t, idx) => ({
-        conteudo: t.conteudo,
-        posX: Math.round(t.posX),
-        posY: Math.round(t.posY),
-        largura: Math.round(t.largura),
-        fonte: t.fonte,
-        tamanho: Math.round(t.tamanho),
-        cor: t.cor,
-        alinhamento: t.alinhamento,
-        negrito: t.negrito,
-        ordem: idx,
-      }));
+    // Mapeia os itens de UMA página nos 3 arrays esperados pelo backend.
+    const layoutDaPagina = (arr: Item[]) => ({
+      textos: arr
+        .filter((i): i is ItemTexto => i.kind === 'texto')
+        .map((t, idx) => ({
+          conteudo: t.conteudo, posX: Math.round(t.posX), posY: Math.round(t.posY),
+          largura: Math.round(t.largura), fonte: t.fonte, tamanho: Math.round(t.tamanho),
+          cor: t.cor, alinhamento: t.alinhamento, negrito: t.negrito, ordem: idx,
+        })),
+      fotos: arr
+        .filter((i): i is ItemFoto => i.kind === 'foto' && !!i.url)
+        .map((f, idx) => ({
+          url: f.url, storageKey: f.storageKey, posX: Math.round(f.posX), posY: Math.round(f.posY),
+          largura: Math.round(f.largura), altura: Math.round(f.altura), ordem: idx,
+        })),
+      elementos: arr
+        .filter((i): i is ItemElemento => i.kind === 'elemento')
+        .map((e, idx) => ({
+          tipo: e.tipo, posX: Math.round(e.posX), posY: Math.round(e.posY),
+          largura: Math.round(e.largura), altura: Math.round(e.altura),
+          config: { cor: e.cor, espessura: e.espessura }, ordem: idx,
+        })),
+    });
 
-    const fotos = itens
-      .filter((i): i is ItemFoto => i.kind === 'foto' && !!i.url)
-      .map((f, idx) => ({
-        url: f.url,
-        storageKey: f.storageKey,
-        posX: Math.round(f.posX),
-        posY: Math.round(f.posY),
-        largura: Math.round(f.largura),
-        altura: Math.round(f.altura),
-        ordem: idx,
-      }));
-
-    const elementos = itens
-      .filter((i): i is ItemElemento => i.kind === 'elemento')
-      .map((e, idx) => ({
-        tipo: e.tipo,
-        posX: Math.round(e.posX),
-        posY: Math.round(e.posY),
-        largura: Math.round(e.largura),
-        altura: Math.round(e.altura),
-        config: { cor: e.cor, espessura: e.espessura },
-        ordem: idx,
-      }));
+    const paginasBody = paginas.map((pg, pi) => ({
+      ordem: pi,
+      fundoUrl: pg.fundoUrl || undefined,
+      ...layoutDaPagina(pg.itens),
+    }));
 
     const body = {
       nome: nome.trim(),
       typeId: typeId || undefined,
-      fundoUrl: fundoUrl || undefined,
+      fundoUrl: paginas[0]?.fundoUrl || undefined, // fundo default/legado (1ª página)
       largura: Math.round(largura),
       altura: Math.round(altura),
       orientacao,
       padrao,
       ativo,
-      textos,
-      elementos,
-      fotos,
+      paginas: paginasBody,
     };
 
     try {
@@ -468,6 +541,47 @@ export default function CertificadoDesigner({ editando, tipos, onClose, onSalvo 
           </button>
           <button type="button" className={ui.btnGhost} onClick={addFoto}>
             + Imagem
+          </button>
+        </div>
+
+        {/* Navegação de páginas (certificado multipágina) */}
+        <div
+          className="flex items-center gap-1 rounded border border-border px-1.5 py-0.5"
+          role="group"
+          aria-label="Páginas do certificado"
+        >
+          <button
+            type="button"
+            className={ui.btnGhost}
+            onClick={() => irParaPagina(Math.max(0, pgAtual - 1))}
+            disabled={pgAtual === 0}
+            aria-label="Página anterior"
+          >
+            ◀
+          </button>
+          <span className="px-1 text-sm font-semibold tabular-nums" aria-live="polite">
+            Pág. {pgAtual + 1}/{paginas.length}
+          </span>
+          <button
+            type="button"
+            className={ui.btnGhost}
+            onClick={() => irParaPagina(Math.min(paginas.length - 1, pgAtual + 1))}
+            disabled={pgAtual >= paginas.length - 1}
+            aria-label="Próxima página"
+          >
+            ▶
+          </button>
+          <button type="button" className={ui.btnGhost} onClick={addPagina} title="Adicionar página">
+            + Página
+          </button>
+          <button
+            type="button"
+            className={ui.btnDanger}
+            onClick={() => removerPagina(pgAtual)}
+            disabled={paginas.length <= 1}
+            title="Excluir a página atual"
+          >
+            Excluir pág.
           </button>
         </div>
 
@@ -534,7 +648,7 @@ export default function CertificadoDesigner({ editando, tipos, onClose, onSalvo 
             </div>
 
             <div>
-              <label className={ui.label}>Imagem de fundo</label>
+              <label className={ui.label}>Imagem de fundo <span className="font-normal text-fg/55">(página {pgAtual + 1})</span></label>
               <div className="mt-1 flex gap-2">
                 <input
                   type="url"
@@ -645,7 +759,7 @@ export default function CertificadoDesigner({ editando, tipos, onClose, onSalvo 
               width: larguraTela,
               height: alturaTela,
               backgroundColor: '#ffffff',
-              backgroundImage: fundoUrl ? `url("${fundoUrl}")` : undefined,
+              backgroundImage: fundoUrl ? `url("${fundoUrl.replace(/["\\]/g, '\\$&')}")` : undefined,
               backgroundSize: '100% 100%',
               backgroundRepeat: 'no-repeat',
             }}
